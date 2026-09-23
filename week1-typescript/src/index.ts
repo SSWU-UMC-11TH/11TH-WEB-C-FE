@@ -29,3 +29,8 @@ function getMemberInfo(id: number): string {
 
   return `회원 이름: ${foundMember.name} | 역할: ${foundMember.role} | GitHub: ${githubInfo}`;
 }
+
+// 3. 테스트 실행
+console.log(getMemberInfo(1));   // ID 1: 광수 (GitHub 있음)
+console.log(getMemberInfo(2));   // ID 2: 지수 (GitHub 없음)
+console.log(getMemberInfo(999)); // ID 999: 존재하지 않는 회원
