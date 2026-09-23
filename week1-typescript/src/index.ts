@@ -14,3 +14,18 @@ const members: StudyMember[] = [
   { id: 1, name: "광수", role: "leader", githubId: "gwangsoo" }, // GitHub 있음
   { id: 2, name: "지수", role: "member" },                      // GitHub 없음 (선택적 속성이므로 생략 가능)
 ];
+
+// 회원 ID로 정보를 찾아 안내 문구를 만드는 함수
+function getMemberInfo(id: number): string {
+  const foundMember = members.find((member) => member.id === id);
+
+  // 1. 존재하지 않는 회원 처리 (찾지 못했다면 undefined)
+  if (!foundMember) {
+    return `[오류] ID가 ${id}인 회원을 찾을 수 없습니다.`;
+  }
+
+  // 2. GitHub 아이디가 없는 회원 처리
+  const githubInfo = foundMember.githubId ?? "등록된 GitHub 없음";
+
+  return `회원 이름: ${foundMember.name} | 역할: ${foundMember.role} | GitHub: ${githubInfo}`;
+}
