@@ -340,27 +340,42 @@
 type Member = {
     Id: number,
     Name: string,
-    Status: string,
+    Role: string,
     githubId?: string;
 };
 
 const jin: Member = {
     Id: 1,
     Name: "진",
-    Status: "졸림"
+    Role: "졸림",
+    githubId: "jin123"
 };
 
 const v: Member = {
     Id: 2,
     Name: "v",
-    Status: "배고픔"
+    Role: "배고픔"
 };
 
-const iu: Member = {
-    Id: 999,
-    Name: "iu",
-    Status: "지루함"
-};
+const members: Member[] = [jin, v];
+
+function findMember(Id: number) {
+    const member = members.find(member => member.Id === Id);
+
+    if(!member) {
+        return "존재하지 않는 회원입니다.";
+    }
+
+    const github = member.githubId ?? "github 아이디 없음";
+
+    return `${member.Name} / ${member.Role} / ${github}`;
+}
+
+console.log(findMember(1));
+console.log(findMember(2));
+console.log(findMember(999));
+
+
 
 
 
