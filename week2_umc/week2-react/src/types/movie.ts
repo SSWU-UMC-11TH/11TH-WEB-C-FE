@@ -6,7 +6,7 @@ export interface Movie {
   posterPath: string;
   backdropPath: string;
   genres: string[];
-  runtime: string;
+  runtime: number;
   tagline: string;
   overview: string;
   isBookmarked: boolean;
