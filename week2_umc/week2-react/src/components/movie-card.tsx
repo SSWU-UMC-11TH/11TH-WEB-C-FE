@@ -17,7 +17,7 @@ export function MovieCard({ movie, onToggleBookmark }: MovieCardProps) {
           type="button"
         >
           <img 
-            src={movie.isBookmarked ? "/icons/bookmark (1).svg" : "/icons/bookmark-outline (1).svg"} 
+            src={movie.isBookmarked ? "/icons/bookmark.svg" : "/icons/bookmark-outline.svg"} 
             alt={movie.isBookmarked ? "북마크 취소" : "북마크 하기"}
           />
         </button>
