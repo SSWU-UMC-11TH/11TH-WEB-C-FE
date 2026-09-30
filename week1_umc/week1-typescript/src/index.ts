@@ -23,7 +23,7 @@ function searchMemberById(id: number): string {
         return "존재하지 않는 회원입니다.";
     }
     const githubText = foundMember.githubId ?? "GitHub 아이디가 존재하지 않습니다.";
-    return foundMember.name + " (" + foundMember.role + ")님 / GitHub: " + githubText;
+    return `${foundMember.name} (${foundMember.role})님 /GitHub: ${githubText}`;
 }
 
 console.log(searchMemberById(1));
