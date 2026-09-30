@@ -1,6 +1,5 @@
-import type { Movie } from "../types/movie";
+import type { Movie } from "../../types/movie";
 import { MovieCard } from "./movie-card";
-import "./movie-grid.css";
 
 interface MovieGridProps {
   movies: Movie[];
@@ -9,16 +8,10 @@ interface MovieGridProps {
 
 export const MovieGrid = ({ movies, onToggleBookmark }: MovieGridProps) => {
   return (
-    <section className="movie-grid-section">
-      <div className="movie-grid">
-        {movies.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            onToggleBookmark={onToggleBookmark}
-          />
-        ))}
-      </div>
-    </section>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-5 gap-y-8 w-full">
+      {movies.map((movie) => (
+        <MovieCard key={movie.id} movie={movie} onToggleBookmark={onToggleBookmark} />
+      ))}
+    </div>
   );
 };
