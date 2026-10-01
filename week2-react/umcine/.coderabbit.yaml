@@ -1,0 +1,6 @@
+# .coderabbit.yaml
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - ".*" # 모든 브랜치(main, develop, feature 등)로 향하는 PR에서 자동 리뷰 활성화
