@@ -3,17 +3,15 @@ import { MovieCard } from "./movie-card";
 
 interface MovieGridProps {
   movies: Movie[];
-  onToggleBookmark: (id: number) => void;
 }
 
-export function MovieGrid({ movies, onToggleBookmark }: MovieGridProps) {
+export function MovieGrid({ movies }: MovieGridProps) {
   return (
     <div className="grid grid-cols-5 gap-[14px] w-full">
       {movies.map((movie) => (
         <MovieCard
           key={movie.id}
           movie={movie}
-          onToggleBookmark={onToggleBookmark}
         />
       ))}
     </div>
