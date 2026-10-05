@@ -1,6 +1,5 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { movies } from "../../data/movies";
-import { cn } from "../../utils/cn";
 import { BookmarkButton } from "../../components/bookmark-button";
 
 export function MovieDetailPage() {
