@@ -1,11 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { movies as initialMovies } from "../../data/movies";
 import { MovieGrid } from "../../components/movies/movie-grid";
 import { Pagination } from "../../components/movies/pagination";
+import { readBookmarkIds, saveBookmarkIds } from "../../utils/bookmark-storage";
 
-export const MovieListPage = () => {
-  const [movies, setMovies] = useState(initialMovies);
-
+export const MovieListPage = () => {  const [bookmarkIds, setBookmarkIds] = useState<number[]>(
+    () => readBookmarkIds()
+    );
+  const [movies, setMovies] = useState(() =>
+    initialMovies.map((movie) => ({
+      ...movie,
+      isBookmarked: bookmarkIds.includes(movie.id),
+    }))
+  );
+  
+useEffect(() => {
+  saveBookmarkIds(bookmarkIds);
+  }, [bookmarkIds]);
+  
   // 북마크 토글 함수
   const handleToggleBookmark = (id: number) => {
     setMovies((prevMovies) =>
@@ -15,6 +27,11 @@ export const MovieListPage = () => {
           : movie
       )
     );
+    setBookmarkIds((prevIds) =>
+    prevIds.includes(id)
+      ? prevIds.filter((bookmarkId) => bookmarkId !== id)
+      : [...prevIds, id]
+  );
   };
 
   return (
