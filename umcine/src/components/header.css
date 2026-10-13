@@ -1,0 +1,30 @@
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  width: 1440px;
+  min-height: 91px;
+  box-sizing: border-box;
+
+  padding: 24px 80px;
+  background-color: white;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.header-left nav {
+  display: flex;
+  gap: 20px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
