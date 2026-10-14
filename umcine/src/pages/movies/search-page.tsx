@@ -1,11 +1,26 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { movies } from "../../data/movies";
+import MovieGrid from "../../components/movies/movie-grid";
 
 export function SearchPage() {
     const { query } = useSearch({ from: "/search"});
     const navigate = useNavigate({ from: "/search"});
     const [searchText, setSearchText] = useState(query ?? "");
+    const [movieList, setMovieList] = useState(movies);
+
+    const handleBookmark = (movieId: number) => {
+        setMovieList((prevMovies) => 
+            prevMovies.map((movie) =>
+                movie.id === movieId
+                    ? {
+                        ...movie,
+                        isBookmarked: !movie.isBookmarked,
+                    }
+                    : movie
+                )
+            );
+    };
 
     useEffect(() => {
         setSearchText(query ?? "");
@@ -13,7 +28,7 @@ export function SearchPage() {
 
     const normalizedQuery = query?.trim().toLowerCase() ?? "";
     const searchResults = normalizedQuery
-     ? movies.filter(
+     ? movieList.filter(
         (movie) =>
             movie.title.toLowerCase().includes(normalizedQuery) ||
             movie.originalTitle.toLowerCase().includes(normalizedQuery),
@@ -50,23 +65,27 @@ export function SearchPage() {
                   {searchResults.length === 0 ? (
                     <p>검색 결과가 없어요.</p>
                   ) : (
-                    <ul>
-                        {searchResults.map((movie) => (
-                            <li key={movie.id}>
-                                <img src={movie.posterPath} alt={`${movie.title} 포스터`} />
-                                <h3>{movie.title}</h3>
-                                <p>{movie.originalTitle}</p>
-                                <p>{movie.releaseDate}</p>
-                                <p>{movie.overview}</p>
-                                <Link
-                                  to="/movies/$movieId"
-                                  params={{ movieId: String(movie.id) }}
-                                >
-                                    상세 보기
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                    <MovieGrid
+                        movies={searchResults}
+                        onBookmark={handleBookmark}
+                    />
+                    // <ul>
+                    //     {searchResults.map((movie) => (
+                    //         <li key={movie.id}>
+                    //             <img src={movie.posterPath} alt={`${movie.title} 포스터`} />
+                    //             <h3>{movie.title}</h3>
+                    //             <p>{movie.originalTitle}</p>
+                    //             <p>{movie.releaseDate}</p>
+                    //             <p>{movie.overview}</p>
+                    //             <Link
+                    //               to="/movies/$movieId"
+                    //               params={{ movieId: String(movie.id) }}
+                    //             >
+                    //                 상세 보기
+                    //             </Link>
+                    //         </li>
+                    //     ))}
+                    // </ul>
                   )}
                 </>
             )}
