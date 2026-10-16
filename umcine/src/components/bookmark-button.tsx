@@ -2,9 +2,10 @@ import { useBookmarkStore  } from "../stores/bookmark-store";
 
 interface BookmarkButtonProps {
     movieId: number;
+    varient?: "card" | "detail";
 }
 
-export function BookmarkButton({ movieId }: BookmarkButtonProps) {
+export function BookmarkButton({ movieId, varient="card", }: BookmarkButtonProps) {
     const isBookmarked = useBookmarkStore((state) =>
         state.bookmarkedMovieIds.includes(movieId),
     );
