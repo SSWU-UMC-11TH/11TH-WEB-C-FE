@@ -7,20 +7,7 @@ export function SearchPage() {
     const { query } = useSearch({ from: "/search"});
     const navigate = useNavigate({ from: "/search"});
     const [searchText, setSearchText] = useState(query ?? "");
-    const [movieList, setMovieList] = useState(movies);
 
-    const handleBookmark = (movieId: number) => {
-        setMovieList((prevMovies) => 
-            prevMovies.map((movie) =>
-                movie.id === movieId
-                    ? {
-                        ...movie,
-                        isBookmarked: !movie.isBookmarked,
-                    }
-                    : movie
-                )
-            );
-    };
 
     useEffect(() => {
         setSearchText(query ?? "");
@@ -28,7 +15,7 @@ export function SearchPage() {
 
     const normalizedQuery = query?.trim().toLowerCase() ?? "";
     const searchResults = normalizedQuery
-     ? movieList.filter(
+     ? movies.filter(
         (movie) =>
             movie.title.toLowerCase().includes(normalizedQuery) ||
             movie.originalTitle.toLowerCase().includes(normalizedQuery),
@@ -113,9 +100,7 @@ export function SearchPage() {
                     </p>
                 ) : (
                     <MovieGrid
-                        movies={searchResults}
-                        onBookmark={handleBookmark}
-                    />
+                        movies={searchResults} />
                 )}
             </section>
         )}
