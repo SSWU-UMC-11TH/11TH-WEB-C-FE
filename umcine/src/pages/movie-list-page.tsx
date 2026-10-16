@@ -1,30 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MovieGrid from "../components/movies/movie-grid";
 import Pagination from "../components/movies/pagination";
 import { movies } from "../data/movies";
+import { readBookmarkIds, saveBookMarkIds } from "../utils/bookmark-storage";
 
 export function MovieListPage() {
-    const [movieList, setMovieList] = useState(movies);
+
+    const [bookmarkIds, setBookmarkIds] = useState<number[]>(readBookmarkIds);
+
+    useEffect(() => {
+        saveBookMarkIds(bookmarkIds);
+    }, [bookmarkIds]);
     
         const handleBookmark = (movieId: number) => {
-            setMovieList((prevMovies) =>
-              prevMovies.map((movie) =>
-                movie.id === movieId
-                    ? {
-                        ...movie,
-                        isBookmarked: !movie.isBookmarked,
-                    }
-                    :movie
-                )
+            setBookmarkIds((prev) =>
+              prev.includes(movieId) 
+                    ? prev.filter((id) => id !== movieId)
+                    : [...prev, movieId]
             );
         };
+        
     
     return (
         <main>
             <h1>영화 목록</h1>
                 <MovieGrid
-                    movies={movieList}
-                     onBookmark={handleBookmark}
+                    movies={movies}
                 />
                 <Pagination />
             </main>
