@@ -28,11 +28,9 @@ export function MovieDetailPage() {
       </div>
     );
   }
-
+  
   const handleToggleBookmark = () => {
-    // 로컬 데이터 객체의 isBookmarked 값도 함께 업데이트
-    movie.isBookmarked = !isBookmarked;
-    setIsBookmarked(!isBookmarked);
+  setIsBookmarked((prev) => !prev);
   };
 
   const hours = Math.floor(movie.runtime / 60);
