@@ -1,15 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useState } from "react";
 import { movies } from "../../data/movies";
-import { cn } from "../../utils/cn";
+import { BookmarkButton } from "../../components/bookmark-button";
+import { useState } from "react";
 
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
   const movie = movies.find((item) => item.id === Number(movieId));
-
-  const [isBookmarked, setIsBookmarked] = useState<boolean>(
-    movie?.isBookmarked ?? false
-  );
 
   // 평점 및 후기 관련 상태 추가
   const [rating, setRating] = useState<number>(0);
@@ -33,10 +29,6 @@ export function MovieDetailPage() {
       </div>
     );
   }
-
-  const handleToggleBookmark = () => {
-    setIsBookmarked((prev) => !prev);
-  };
 
   const handleSaveReview = () => {
     if (rating === 0) {
@@ -110,34 +102,7 @@ export function MovieDetailPage() {
                 </p>
 
                 <div className="mt-[16px]">
-                  <button
-                    type="button"
-                    onClick={handleToggleBookmark}
-                    className={cn(
-                      "inline-flex items-center gap-[8px] px-[18px] py-[10px] rounded-[10px] text-[13px] font-[600] cursor-pointer transition-all duration-200 ease-in-out shadow-sm active:scale-95 border",
-                      isBookmarked
-                        ? "bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-[#1d4ed8]"
-                        : "bg-white hover:bg-[#f9fafb] text-[#374151] border-[#e5e7eb]"
-                    )}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill={isBookmarked ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={cn(
-                        "transition-colors duration-200",
-                        isBookmarked ? "text-white" : "text-[#6b7280]"
-                      )}
-                    >
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                    <span>{isBookmarked ? "즐겨찾기 완료" : "즐겨찾기"}</span>
-                  </button>
+                <BookmarkButton movieId={movie.id} variant="detail" />
                 </div>
               </div>
             </div>

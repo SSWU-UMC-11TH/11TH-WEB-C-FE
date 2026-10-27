@@ -9,5 +9,4 @@ export interface Movie {
   runtime: number;
   tagline: string;
   overview: string;
-  isBookmarked: boolean;
 }
