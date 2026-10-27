@@ -1,10 +1,16 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { movies } from "../../data/movies";
 import { BookmarkButton } from "../../components/bookmark-button";
+import { useState } from "react";
 
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
   const movie = movies.find((item) => item.id === Number(movieId));
+
+  // 평점 및 후기 관련 상태 추가
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [review, setReview] = useState<string>("");
 
   if (!movie) {
     return (
@@ -23,6 +29,14 @@ export function MovieDetailPage() {
       </div>
     );
   }
+
+  const handleSaveReview = () => {
+    if (rating === 0) {
+      alert("별점을 선택해 주세요!");
+      return;
+    }
+    alert(`평점이 저장되었습니다.\n별점: ${rating}점\n후기: ${review}`);
+  };
 
   const hours = Math.floor(movie.runtime / 60);
   const minutes = movie.runtime % 60;
@@ -66,28 +80,85 @@ export function MovieDetailPage() {
           </div>
         </section>
 
-        {/* 본문 상세 정보 영역 */}
+        {/* 본문 상세 정보 및 내 평점 영역 */}
         <main className="max-w-[1080px] mx-auto px-[20px] py-[32px] box-border">
-          <div className="flex flex-col md:flex-row gap-[28px] items-start">
-            <img
-              src={movie.posterPath}
-              alt={`${movie.title} 포스터`}
-              className="w-[180px] h-[260px] object-cover rounded-[12px] shadow-md shrink-0"
-            />
+          <div className="flex flex-col lg:flex-row gap-[32px] items-start justify-between">
+            {/* 왼쪽: 포스터 & 개요 */}
+            <div className="flex flex-col md:flex-row gap-[28px] items-start flex-1">
+              <img
+                src={movie.posterPath}
+                alt={`${movie.title} 포스터`}
+                className="w-[180px] h-[260px] object-cover rounded-[12px] shadow-md shrink-0"
+              />
 
-            <div className="flex flex-col justify-start gap-[12px] flex-1">
-              {movie.tagline && (
-                <h2 className="text-[18px] font-[700] text-[#111111]">
-                  {movie.tagline}
-                </h2>
-              )}
-              <p className="text-[13px] text-[#4b5563] leading-relaxed max-w-[680px]">
-                {movie.overview}
+              <div className="flex flex-col justify-start gap-[12px] flex-1">
+                {movie.tagline && (
+                  <h2 className="text-[18px] font-[700] text-[#111111]">
+                    {movie.tagline}
+                  </h2>
+                )}
+                <p className="text-[13px] text-[#4b5563] leading-relaxed max-w-[500px]">
+                  {movie.overview}
+                </p>
+
+                <div className="mt-[16px]">
+                <BookmarkButton movieId={movie.id} variant="detail" />
+                </div>
+              </div>
+            </div>
+
+            {/* 내 평점 섹션 */}
+            <div className="w-full lg:w-[320px] shrink-0 border-t lg:border-t-0 lg:border-l border-[#e5e7eb] pt-[24px] lg:pt-0 lg:pl-[32px]">
+              <h2 className="text-[18px] font-[700] text-[#111111]">
+                내 평점
+              </h2>
+              <p className="text-[11px] text-[#94979c] mb-[10px]">
+                별점은 필수, 후기는 선택이에요.
               </p>
 
-              <div className="mt-[16px]">
-              <BookmarkButton movieId={movie.id} variant="detail" /> 
+            {/* 별점 선택 카드 */}
+              <div className="flex items-center justify-start gap-[4px] mb-[8px]">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const activeRating = hoverRating || rating;
+                  return(
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="w-[35px] h-[35px] flex items-center justify-center bg-white border border-[#e5e7eb] rounded-[10px] transition-colors hover:border-[#2563eb] active:scale-95 cursor-pointer"
+                    >
+                      <svg
+                        width="23"
+                        height="23"
+                        viewBox="0 0 24 24"
+                        fill={ activeRating >= star ? "#2563eb" : "#464749"}
+                        className="transition-colors duration-150"
+                      >
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* 후기 입력 창 */}
+              <textarea
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                placeholder="영화를 보고 느낀 점을 남겨보세요."
+                className="w-full h-[100px] p-[12px] text-[12px] bg-white border border-[#e5e7eb] rounded-[10px] resize-none focus:outline-none focus:border-[#2563eb] placeholder:text-[#9ca3af] box-border mb-[12px]"
+              />
+
+              {/* 저장 버튼 */}
+              <button
+                type="button"
+                onClick={handleSaveReview}
+                className="w-full py-[12px] bg-[#1e293b] hover:bg-[#0f172a] text-white text-[13px] font-[600] rounded-[10px] transition-colors active:scale-95 cursor-pointer"
+              >
+                평점 저장
+              </button>
             </div>
           </div>
         </main>

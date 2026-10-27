@@ -1,6 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { cn } from "../../utils/cn";
 
 export function Header() {
+    const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
   return (
     <header className="w-full bg-white border-b border-[#e5e7eb] py-[12px] box-border">
       <div className="max-w-[1080px] mx-auto px-[20px] flex justify-between items-center">
@@ -9,26 +14,35 @@ export function Header() {
           <div className="text-[18px] font-[900] text-[#111111] tracking-[-0.5px]">
             UMCine
           </div>
-          <nav className="flex gap-[20px]">
-            <Link
-              to="/"
-              className="no-underline text-[13px] font-[600] text-[#111111] transition-colors"
-            >
-              영화
-            </Link>
-            <Link
-              to="/search"
-              className="no-underline text-[13px] font-[600] text-[#6b7280] hover:text-[#111111] transition-colors"
-            >
-              검색
-            </Link>
-            <Link
-              to="/"
-              className="no-underline text-[13px] font-[600] text-[#6b7280] hover:text-[#111111] transition-colors"
-            >
-              내 정보
-            </Link>
-          </nav>
+
+        <nav className="flex gap-[20px]">
+          <Link
+            to="/"
+            className={cn(
+              "no-underline text-[13px] font-[600] text-[#6b7280] transition-colors hover:text-[#111111]",
+              pathname === "/" && "text-[#111111] font-bold"
+            )}
+          >
+            영화
+          </Link>
+
+          <Link
+            to="/search"
+            className={cn(
+              "no-underline text-[13px] font-[600] text-[#6b7280] transition-colors hover:text-[#111111]",
+              pathname === "/search" && "text-[#111111] font-bold"
+            )}
+          >
+            검색
+          </Link>
+
+          <Link
+            to="/"
+            className="no-underline text-[13px] font-[600] text-[#6b7280] hover:text-[#111111] transition-colors"
+          >
+            내 정보
+          </Link>
+        </nav>
         </div>
 
         {/* 오른쪽: 돋보기 아이콘 버튼 및 파란색 로그인 버튼 */}
