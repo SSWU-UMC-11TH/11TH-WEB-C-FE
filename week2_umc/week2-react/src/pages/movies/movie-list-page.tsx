@@ -1,10 +1,36 @@
-import { movies as initialMovies } from "../../data/movies";
 import { MovieGrid } from "../../components/movies/movie-grid";
 import { Pagination } from "../../components/movies/pagination";
+import type { TmdbMovieListItem } from "../../api/movies/models";
+import { useEffect, useState } from "react";
+import { getMovies } from "../../api/movies/get-movies";
 
 export const MovieListPage = () => {
-  // ✅ 수정: 북마크 상태를 MovieListPage에서 직접 관리하지 않음
-  const movies = initialMovies;
+const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
+const [isLoading, setIsLoading] = useState<boolean>(true);
+const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+useEffect(() => {
+  let ignore = false;
+  async function loadMovies() {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await getMovies({ page: 1 });
+      if (!ignore) setMovies(response.results);
+    } catch {
+      if (!ignore) setErrorMessage("영화 목록을 불러오지 못했어요.");
+    } finally {
+      if (!ignore) setIsLoading(false);
+    }
+  }
+
+  loadMovies();
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#f4f5f7] font-sans text-[#111]">
@@ -13,8 +39,20 @@ export const MovieListPage = () => {
           영화 목록
         </h1>
 
-        {/* ✅ 수정: onToggleBookmark 전달 제거 */}
-        <MovieGrid movies={movies} />
+        {/* 로딩, 에러, 성공 상태별 화면 처리 */}
+        {isLoading && (
+          <div className="py-[40px] text-center text-[#6b7280]">
+            영화를 불러오는 중입니다...
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="py-[40px] text-center text-[#ef4444]">
+            {errorMessage}
+          </div>
+        )}
+
+        {!isLoading && !errorMessage && <MovieGrid movies={movies} />}
 
         <Pagination />
       </main>
