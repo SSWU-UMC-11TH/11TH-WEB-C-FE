@@ -12,10 +12,10 @@ export function SearchPage() {
     const [searchText, setSearchText] = useState(query ?? "");
 
     // API 검색 결과
-    const [searchResults, setSearchResults] = useState<TmdbMovieListItem[]>([]);
+    const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
     const [totalResults, setTotalResults] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // URL의 검색어가 변경되면 입력창에도 반영
     useEffect(() => {
@@ -26,42 +26,42 @@ export function SearchPage() {
 
     // 검색어가 변경되면 TMDB API 호출
     useEffect(() => {
-        let active = true;
+        let ignore = false;
+        const normalizedQuery = query?.trim() ?? "";
 
-        setSearchResults([]);
+        setMovies([]);
         setTotalResults(0);
-        setError(false);
+        setErrorMessage(null);
 
-        if (!normalizedQuery) {
-            setLoading(false);
+        if(!normalizedQuery) {
+            setIsLoading(false);
             return;
         }
 
-        setLoading(true);
+        setIsLoading(true);
 
-        searchMovies({ query: normalizedQuery, page: 1 })
+        searchMovies({ query: normalizedQuery})
             .then((response) => {
-                if (active) {
-                    setSearchResults(response.results);
+                if(!ignore) {
+                    setMovies(response.results);
                     setTotalResults(response.total_results);
                 }
             })
-            .catch((error) => {
-                console.error("영화 검색 실패:", error);
-                if (active) {
-                    setError(true);
+            .catch(() => {
+                if(!ignore) {
+                    setErrorMessage("검색 결과를 불러오지 못했어요.");
                 }
             })
             .finally(() => {
-                if (active) {
-                    setLoading(false);
+                if(!ignore) {
+                    setIsLoading(false);
                 }
             });
 
-        return () => {
-            active = false;
-        };
-    }, [normalizedQuery]);
+            return () => {
+                ignore = true;
+            };
+    }, [query]);
 
     // 검색 버튼 클릭 또는 Enter 입력
     function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -135,11 +135,11 @@ export function SearchPage() {
                         '{query}' 검색 결과
                     </h2>
 
-                    {loading ? (
+                    {isLoading ? (
                         <p className="py-16 text-center text-gray-500">
                             영화를 검색하는 중...
                         </p>
-                    ) : error ? (
+                    ) : errorMessage ? (
                         <p className="py-16 text-center text-red-500">
                             검색 중 오류가 발생했어요.
                         </p>
@@ -149,12 +149,12 @@ export function SearchPage() {
                                 영화 {totalResults}편
                             </p>
 
-                            {searchResults.length === 0 ? (
+                            {movies.length === 0 ? (
                                 <p className="py-16 text-center text-gray-500">
                                     검색 결과가 없어요.
                                 </p>
                             ) : (
-                                <MovieGrid movies={searchResults} />
+                                <MovieGrid movies={movies} />
                             )}
                         </>
                     )}
