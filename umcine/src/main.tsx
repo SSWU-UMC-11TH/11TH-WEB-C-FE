@@ -4,7 +4,6 @@ import { createRouter, RouterProvider} from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import "./examples/promise-status";
 import "./examples/promise-syntax";
-import "./examples/fetch-movies";
 import './index.css'
 
 const router = createRouter({ routeTree });
