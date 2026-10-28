@@ -8,37 +8,54 @@ import { getMovies } from "../api/movies/get-movies";
 
 export function MovieListPage() {
 
-    const [movies, setMovies ] = useState<TmdbMovieListItem[]>([]);
-    const [bookmarkIds, setBookmarkIds] = useState<number[]>(readBookmarkIds);
+    const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        saveBookMarkIds(bookmarkIds);
-    }, [bookmarkIds]);
+        let ignore = false;
 
-    useEffect(() => {
-        getMovies()
-           .then((response) => {
-                setMovies(response.results);
-           })
-           .catch((error) => {
-              console.error("영화 목록 불러오기 실패:" ,error);
-           });
-    }, []);
-    
-        const handleBookmark = (movieId: number) => {
-            setBookmarkIds((prev) =>
-              prev.includes(movieId) 
-                    ? prev.filter((id) => id !== movieId)
-                    : [...prev, movieId]
-            );
+        async function loadMovies() {
+            setIsLoading(true);
+            setErrorMessage(null);
+
+            try {
+                const response = await getMovies({ page:1 });
+
+                if(!ignore) {
+                    setMovies(response.results);
+                }
+            } catch {
+                if(!ignore) {
+                    setErrorMessage("영화 목록을 불러오지 못했어요.");
+                }
+            } finally {
+                if(!ignore) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        loadMovies();
+
+        return () => {
+            ignore = true;
         };
+    }, []);
         
     
     return (
         <main>
             <h1>영화 목록</h1>
-                <MovieGrid movies={movies}/>
-                <Pagination />
+            
+            {isLoading ? (
+                <p>영화 목록을 불러오는 중...</p>   
+            ) : errorMessage ? (
+                <p className="text-red-500">{errorMessage}</p>
+            ) : (
+                <MovieGrid movies={movies} />
+            )}
+            <Pagination />
             </main>
     );
 }
