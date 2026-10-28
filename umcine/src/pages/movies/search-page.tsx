@@ -4,6 +4,7 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { searchMovies } from "../../api/movies/search-movies";
 import type { TmdbMovieListItem } from "../../api/movies/models";
 import MovieGrid from "../../components/movies/movie-grid";
+import Footer from "../../components/layout/footer";
 
 export function SearchPage() {
     const { query } = useSearch({ from: "/search" });
@@ -160,6 +161,7 @@ export function SearchPage() {
                     )}
                 </section>
             )}
+            <Footer />
         </main>
     );
 }

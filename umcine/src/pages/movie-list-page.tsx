@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import MovieGrid from "../components/movies/movie-grid";
 import Pagination from "../components/movies/pagination";
 //import { movies } from "../data/movies";
-import { readBookmarkIds, saveBookMarkIds } from "../utils/bookmark-storage";
+//import { readBookmarkIds, saveBookMarkIds } from "../utils/bookmark-storage";
 import type {TmdbMovieListItem} from "../api/movies/models";
 import { getMovies } from "../api/movies/get-movies";
+import Footer from "../components/layout/footer";
 
 export function MovieListPage() {
 
@@ -56,6 +57,7 @@ export function MovieListPage() {
                 <MovieGrid movies={movies} />
             )}
             <Pagination />
+            <Footer />
             </main>
     );
 }

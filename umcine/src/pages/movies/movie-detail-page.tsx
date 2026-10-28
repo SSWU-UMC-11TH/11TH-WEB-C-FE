@@ -3,44 +3,55 @@ import { Link, useParams } from "@tanstack/react-router";
 import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
+import {getMovieDetailErrorMessage} from "../../utils/movies/get-movie-detail-error-message.ts";
+import Footer from "../../components/layout/footer.tsx";
 
 export function MovieDetailPage() {
     const { movieId } = useParams({ from: "/movies/$movieId" });
     const [movie, setMovie ] = useState<TmdbMovieDetail | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // 영화 ID를 숫자로 변환
+    const numericMovieId = Number(movieId);
+
+    // 영화 상세 정보 요청
     useEffect(() => {
-        let active = true;
+       let ignore = false;
 
-        setLoading(true);
-        setError(false);
-        setMovie(null);
+       setMovie(null);
+       setErrorMessage(null);
 
-        getMovieDetail(Number(movieId))
+        if (!Number.isSafeInteger(numericMovieId) || numericMovieId <=0) {
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+
+        getMovieDetail(numericMovieId)
             .then((response) => {
-                if (active) {
+                if (!ignore) {
                     setMovie(response);
                 }
             })
-            .catch((error) => {
-                console.error("영화 상세 정보 요청 실패:" , error);
-                if(active) {
-                    setError(true);
+            .catch((error: unknown) => {
+                if(!ignore) {
+                    setErrorMessage(getMovieDetailErrorMessage(error));
                 }
             })
             .finally(() => {
-                if(active) {
-                    setLoading(false);
+                if(!ignore) { setIsLoading(false);
+
                 }
             });
 
             return () => {
-                active = false;
+                ignore = true;
             };
-    }, [movieId]);
+    }, [numericMovieId]);
     
-    if(loading) {
+    if(isLoading) {
         return (
           <main className="flex min-h-screen items-center justify-center">
                 <p>영화 정보를 불러오는 중...</p>
@@ -48,7 +59,7 @@ export function MovieDetailPage() {
         );
     }
 
-    if (error || !movie) {
+    if (errorMessage || !movie) {
         return (
            <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
                 <h1 className="text-2xl font-bold">
@@ -64,11 +75,19 @@ export function MovieDetailPage() {
     // TMDB 이미지 경로 변환
     const backdropUrl = movie.backdrop_path
         ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-        : null;
+        : undefined;
 
     const posterUrl = movie.poster_path
         ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : null;
+        : undefined;
+
+    const genres = movie.genres
+        .map((genre) => genre.name)
+        .join(", ");
+
+    const runtime = movie.runtime !== null
+        ? `${Math.floor(movie.runtime / 60)}시간 ${movie.runtime % 60}분`
+            : "상영 시간 정보가 없어요.";
 
     return (
         <main className="min-h-screen bg-[#F7F8FA] text-gray-900">
@@ -102,7 +121,7 @@ export function MovieDetailPage() {
                     <BookmarkButton movieId={movie.id} />
 
                     <p className="mt-2 text-sm text-gray-200">
-                        {movie.release_date} · {movie.genres.join(" · ")} · {movie.runtime}
+                        {movie.release_date} · {genres} · {runtime}
                     </p>
                     
                 </div>
@@ -161,6 +180,7 @@ export function MovieDetailPage() {
                     >
                         평점 저장
                     </button>
+                    <Footer/>
                 </aside>
             </section>
         </main>
