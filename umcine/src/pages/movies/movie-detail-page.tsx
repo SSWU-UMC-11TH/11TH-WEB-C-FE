@@ -1,17 +1,58 @@
-
+import { useEffect, useState } from "react";
 import { Link, useParams } from "@tanstack/react-router";
-import { movies } from "../../data/movies";
+import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
+import { getMovieDetail } from "../../api/movies/get-movie-detail";
 
 export function MovieDetailPage() {
     const { movieId } = useParams({ from: "/movies/$movieId" });
-    const movie = movies.find((item) => item.id === Number(movieId));
+    const [movie, setMovie ] = useState<TmdbMovieDetail | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-    if (!movie) {
+    useEffect(() => {
+        let active = true;
+
+        setLoading(true);
+        setError(false);
+        setMovie(null);
+
+        getMovieDetail(Number(movieId))
+            .then((response) => {
+                if (active) {
+                    setMovie(response);
+                }
+            })
+            .catch((error) => {
+                console.error("영화 상세 정보 요청 실패:" , error);
+                if(active) {
+                    setError(true);
+                }
+            })
+            .finally(() => {
+                if(active) {
+                    setLoading(false);
+                }
+            });
+
+            return () => {
+                active = false;
+            };
+    }, [movieId]);
+    
+    if(loading) {
         return (
-            <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+          <main className="flex min-h-screen items-center justify-center">
+                <p>영화 정보를 불러오는 중...</p>
+            </main>
+        );
+    }
+
+    if (error || !movie) {
+        return (
+           <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
                 <h1 className="text-2xl font-bold">
-                    영화를 찾을 수 없어요.
+                    영화 정보를 불러올 수 없어요.
                 </h1>
                 <Link to="/" className="text-blue-600 hover:underline">
                     영화 목록으로 돌아가기
@@ -20,12 +61,21 @@ export function MovieDetailPage() {
         );
     }
 
+    // TMDB 이미지 경로 변환
+    const backdropUrl = movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+        : null;
+
+    const posterUrl = movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : null;
+
     return (
         <main className="min-h-screen bg-[#F7F8FA] text-gray-900">
             {/* 상단 배경 이미지 */}
             <section className="relative h-[240px] overflow-hidden md:h-[360px]">
                 <img
-                    src={movie.backdropPath}
+                    src={backdropUrl}
                     alt=""
                     className="absolute inset-0 h-full w-full object-cover"
                 />
@@ -47,12 +97,12 @@ export function MovieDetailPage() {
                     </h1>
 
                     <p className="mt-2 text-sm text-gray-200">
-                        {movie.originalTitle}
+                        {movie.original_title}
                     </p>
                     <BookmarkButton movieId={movie.id} />
 
                     <p className="mt-2 text-sm text-gray-200">
-                        {movie.releaseDate} · {movie.genres.join(" · ")} · {movie.runtime}
+                        {movie.release_date} · {movie.genres.join(" · ")} · {movie.runtime}
                     </p>
                     
                 </div>
@@ -63,7 +113,7 @@ export function MovieDetailPage() {
                 {/* 왼쪽: 포스터와 줄거리 */}
                 <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row">
                     <img
-                        src={movie.posterPath}
+                        src={posterUrl}
                         alt={`${movie.title} 포스터`}
                         className="w-40 self-start rounded-lg object-cover shadow-md sm:w-48 lg:w-52"
                     />
