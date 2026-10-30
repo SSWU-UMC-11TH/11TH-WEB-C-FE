@@ -30,7 +30,6 @@ const handlePageChange = (nextPage: number) => {
           영화 목록
         </h1>
 
-        {/* 로딩, 에러, 성공 상태별 화면 처리 */}
       {/* 로딩, 에러, 성공 상태별 화면 처리 */}
       {moviesQuery.isPending ? (
         <div className="py-[40px] text-center text-[#6b7280]">
