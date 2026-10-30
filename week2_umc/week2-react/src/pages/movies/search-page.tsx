@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type SubmitEvent } from "react";
-import type { TmdbMovieListItem } from "../../api/movies/models";
+import { useQuery } from "@tanstack/react-query";
 import { getTmdbPosterUrl } from "../../utils/movies/tmdb-image";
 import { searchMovies } from "../../api/movies/search-movies";
 
@@ -9,45 +9,23 @@ export function SearchPage() {
   const navigate = useNavigate({ from: "/search" });
   const [searchText, setSearchText] = useState(query ?? "");
 
-  //API 상태 관리를 위한 state 정의
-  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  // URL 검색어와 검색창 동기화
   useEffect(() => {
     setSearchText(query ?? "");
   }, [query]);
 
-  //query 기반으로 searchMovies API를 호출하는 Effect
-  useEffect(() => {
-    let ignore = false;
-    const normalizedQuery = query?.trim() ?? "";
+  // 검색어 정리
+  const normalizedQuery = query?.trim() ?? "";
 
-    setMovies([]);
-    setErrorMessage(null);
+  // 검색 데이터 요청
+  const searchQuery = useQuery({
+    queryKey: ["movies", "search", { query: normalizedQuery }],
+    queryFn: () => searchMovies({ query: normalizedQuery }),
+    enabled: normalizedQuery.length > 0,
+  });
 
-    if (!normalizedQuery) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    searchMovies({ query: normalizedQuery })
-      .then((response) => {
-        if (!ignore) setMovies(response.results);
-      })
-      .catch(() => {
-        if (!ignore) setErrorMessage("검색 결과를 불러오지 못했어요.");
-      })
-      .finally(() => {
-        if (!ignore) setIsLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [query]);
+   // 검색 결과 가져오기
+  const searchResults = searchQuery.data?.results ?? [];
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,8 +34,6 @@ export function SearchPage() {
       search: nextQuery ? { query: nextQuery } : {},
     });
   }
-
-  const normalizedQuery = query?.trim() ?? "";
 
   return (
     <div className="w-full min-h-screen bg-[#f4f5f7] font-sans text-[#111] flex flex-col justify-between">
@@ -88,7 +64,7 @@ export function SearchPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="영화 제목을 입력하세요"
-              className="w-full border-none outline-none text-[14px] text-[#111] placeholder-[#9ca3af] bg-transparent"
+              className="w-full border-none outline-none text-[14px] font-[600] text-[#111] placeholder-[#9ca3af] bg-transparent"
             />
             {searchText && (
               <button
@@ -109,36 +85,36 @@ export function SearchPage() {
         </form>
 
         {/* 검색 결과 및 상태 안내 영역 */}
-        {!normalizedQuery ? (
-          <div className="py-[60px] text-center text-[#6b7280] text-[15px]">
-            검색어를 입력해 주세요.
-          </div>
-        ) : isLoading ? (
-          <div className="py-[60px] text-center text-[#6b7280] text-[15px]">
-            검색 중입니다...
-          </div>
-        ) : errorMessage ? (
-          <div className="py-[60px] text-center text-[#ef4444] text-[15px]">
-            {errorMessage}
-          </div>
-        ) : (
+          {!normalizedQuery ? (
+            <div className="py-[60px] text-center text-[#6b7280] text-[15px]">
+              검색어를 입력해 주세요.
+            </div>
+          ) : searchQuery.isLoading ? (
+            <div className="py-[60px] text-center text-[#6b7280] text-[15px]">
+              검색 중입니다...
+            </div>
+          ) : searchQuery.isError ? (
+            <div className="py-[60px] text-center text-[#ef4444] text-[15px]">
+              {searchQuery.error.message}
+            </div>
+          ) : (
           <>
             <div className="flex justify-between items-center mb-[16px]">
-              <h2 className="text-[16px] font-[700] text-[#111]">
+              <h2 className="text-[16px] font-[900] text-[#111]">
                 ‘{query}’ 검색 결과
               </h2>
               <p className="text-[12px] text-[#9ca3af]">
-                영화 {movies.length}편
+                영화 {searchResults.length}편
               </p>
             </div>
 
-            {movies.length === 0 ? (
+            {searchResults.length === 0 ? (
               <div className="py-[60px] text-center text-[#6b7280] text-[15px]">
                 검색 결과가 없어요.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[20px]">
-                {movies.map((movie) => (
+                {searchResults.map((movie) => (
                   <div
                     key={movie.id}
                     className="flex bg-white rounded-[12px] p-[16px] border border-[#e5e7eb] shadow-sm gap-[16px]"
