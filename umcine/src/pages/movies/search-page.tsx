@@ -1,22 +1,18 @@
 
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type SubmitEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { searchMovies } from "../../api/movies/search-movies";
 import type { TmdbMovieListItem } from "../../api/movies/models";
 import MovieGrid from "../../components/movies/movie-grid";
 import Footer from "../../components/layout/footer";
+import { normalizeModuleId } from "vite/module-runner";
 
 export function SearchPage() {
     const { query } = useSearch({ from: "/search" });
     const navigate = useNavigate({ from: "/search" });
 
     const [searchText, setSearchText] = useState(query ?? "");
-
-    // API 검색 결과
-    const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-    const [totalResults, setTotalResults] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // URL의 검색어가 변경되면 입력창에도 반영
     useEffect(() => {
@@ -25,44 +21,15 @@ export function SearchPage() {
 
     const normalizedQuery = query?.trim() ?? "";
 
-    // 검색어가 변경되면 TMDB API 호출
-    useEffect(() => {
-        let ignore = false;
-        const normalizedQuery = query?.trim() ?? "";
+    // Tanstack Query로 영화 검색 API 호출
+    const searchQuery = useQuery({
+        queryKey: ["movies", "search", { query: normalizedQuery}],
+        queryFn: () => searchMovies({ query: normalizedQuery}),
+        enabled: normalizedQuery.length > 0,
+    });
 
-        setMovies([]);
-        setTotalResults(0);
-        setErrorMessage(null);
-
-        if(!normalizedQuery) {
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-
-        searchMovies({ query: normalizedQuery})
-            .then((response) => {
-                if(!ignore) {
-                    setMovies(response.results);
-                    setTotalResults(response.total_results);
-                }
-            })
-            .catch(() => {
-                if(!ignore) {
-                    setErrorMessage("검색 결과를 불러오지 못했어요.");
-                }
-            })
-            .finally(() => {
-                if(!ignore) {
-                    setIsLoading(false);
-                }
-            });
-
-            return () => {
-                ignore = true;
-            };
-    }, [query]);
+    const searchResults = searchQuery.data?.results ?? [];
+    const totalResults = searchQuery.data?.total_results ?? 0;
 
     // 검색 버튼 클릭 또는 Enter 입력
     function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -136,29 +103,29 @@ export function SearchPage() {
                         '{query}' 검색 결과
                     </h2>
 
-                    {isLoading ? (
+                    {searchQuery.isLoading ? (
                         <p className="py-16 text-center text-gray-500">
                             영화를 검색하는 중...
                         </p>
-                    ) : errorMessage ? (
+                    ) : searchQuery.isError ? (
                         <p className="py-16 text-center text-red-500">
                             검색 중 오류가 발생했어요.
                         </p>
-                    ) : (
+                    ) : searchQuery.isSuccess ? ( 
                         <>
                             <p className="text-sm text-gray-600">
                                 영화 {totalResults}편
                             </p>
 
-                            {movies.length === 0 ? (
+                            {searchResults.length === 0 ? (
                                 <p className="py-16 text-center text-gray-500">
                                     검색 결과가 없어요.
                                 </p>
                             ) : (
-                                <MovieGrid movies={movies} />
+                                <MovieGrid movies={searchResults} />
                             )}
                         </>
-                    )}
+                    ) : null}
                 </section>
             )}
             <Footer />
