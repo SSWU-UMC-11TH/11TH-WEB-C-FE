@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
@@ -7,70 +8,67 @@ import {getMovieDetailErrorMessage} from "../../utils/movies/get-movie-detail-er
 import Footer from "../../components/layout/footer.tsx";
 
 export function MovieDetailPage() {
-    const { movieId } = useParams({ from: "/movies/$movieId" });
-    const [movie, setMovie ] = useState<TmdbMovieDetail | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+    const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
+   
     // 영화 ID를 숫자로 변환
-    const numericMovieId = Number(movieId);
+    const movieId = Number(movieIdParam);
 
-    // 영화 상세 정보 요청
-    useEffect(() => {
-       let ignore = false;
+    // 올바른 영화 ID인지 확인
+    const isValidMovieId = Number.isSafeInteger(movieId) && movieId > 0;
 
-       setMovie(null);
-       setErrorMessage(null);
-
-        if (!Number.isSafeInteger(numericMovieId) || numericMovieId <=0) {
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-
-        getMovieDetail(numericMovieId)
-            .then((response) => {
-                if (!ignore) {
-                    setMovie(response);
-                }
-            })
-            .catch((error: unknown) => {
-                if(!ignore) {
-                    setErrorMessage(getMovieDetailErrorMessage(error));
-                }
-            })
-            .finally(() => {
-                if(!ignore) { setIsLoading(false);
-
-                }
-            });
-
-            return () => {
-                ignore = true;
-            };
-    }, [numericMovieId]);
+    // Tanstack Query로 영화 상세 정보 요청
+    const movieDetailQuery = useQuery({
+        queryKey: ["movies", "detail", movieId],
+        queryFn: () => getMovieDetail(movieId),
+        enabled: isValidMovieId,
+    });
     
-    if(isLoading) {
+    
+    // 잘못된 영화 id 처리
+    if (!isValidMovieId) {
         return (
-          <main className="flex min-h-screen items-center justify-center">
-                <p>영화 정보를 불러오는 중...</p>
-            </main>
-        );
-    }
-
-    if (errorMessage || !movie) {
-        return (
-           <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+            <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
                 <h1 className="text-2xl font-bold">
-                    영화 정보를 불러올 수 없어요.
-                </h1>
+                    올바르지 않은 영화 번호예요.
+                 </h1>
                 <Link to="/" className="text-blue-600 hover:underline">
                     영화 목록으로 돌아가기
                 </Link>
             </main>
         );
     }
+
+    // 로딩 상태
+    if (movieDetailQuery.isPending) {
+        return (
+             <main className="flex min-h-screen items-center justify-center">
+                <p>영화 정보를 불러오는 중...</p>
+            </main>
+        );
+    }
+
+    // 오류 상태
+    if (movieDetailQuery.isError) {
+        return (
+            <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+                <h1 className="text-2xl font-bold">
+                    영화 정보를 불러올 수 없어요.
+                </h1>
+
+                <p className="text-sm text-red-500">
+                    {getMovieDetailErrorMessage(movieDetailQuery.error)}
+                </p>
+
+                <Link to="/" className="text-blue-600 hover:underline">
+                    영화 목록으로 돌아가기
+                </Link>
+            </main>
+        );
+    }
+
+    // API 응답 데이터
+    const movie = movieDetailQuery.data;
+   
 
     // TMDB 이미지 경로 변환
     const backdropUrl = movie.backdrop_path
