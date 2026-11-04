@@ -1,46 +1,18 @@
-import { useEffect, useState } from "react";
-import { getMovies } from "../../api/movies/get-movies";
-import type { TmdbMovieListItem } from "../../api/movies/models";
 import { MovieGrid } from "../../components/movies/movie-grid";
 import { Pagination } from "../../components/movies/pagination";
 import { useBookmarkStore } from "../../stores/useBookmarkStore";
+import { useMovieListQuery } from "../../queries/movie-queries";
 
 export const MovieListPage = () => {
   const { toggleBookmark, isBookmarked } = useBookmarkStore();
-  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    async function loadMovies() {
-      
-      setIsLoading(true);
-      setErrorMessage(null);
-
-      try {
-        const response = await getMovies({ page: 1 });
-        
-        if (!ignore) setMovies(response.results);
-      } catch (err) {
-       
-        if (!ignore) setErrorMessage("영화 목록을 불러오지 못했어요.");
-      } finally {
-        if (!ignore) setIsLoading(false);
-      }
-    }
-
-    loadMovies();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const { data, isPending, isError } = useMovieListQuery(1);
 
   // 1. 로딩 상태
-  if (isLoading) return <p className="text-center py-20 text-gray-500">영화 목록을 불러오는 중이에요...</p>;
+  if (isPending) return <p className="text-center py-20 text-gray-500">영화 목록을 불러오는 중이에요...</p>;
   // 2. 오류 상태
-  if (errorMessage) return <p className="text-center py-20 text-red-500">{errorMessage}</p>;
+  if (isError) return <p className="text-center py-20 text-red-500">영화 목록을 불러오지 못했어요.</p>;
+
+  const movies = data.results;
   // 3. 빈 결과 상태
   if (movies.length === 0) return <p className="text-center py-20 text-gray-500">조건에 맞는 영화가 없어요.</p>;
 
@@ -57,6 +29,7 @@ export const MovieListPage = () => {
     voteAverage: movie.vote_average,
     voteCount: movie.vote_count,
     genreIds: movie.genre_ids,
+    genres: [], 
     isBookmarked: isBookmarked(movie.id),
   }));
 
