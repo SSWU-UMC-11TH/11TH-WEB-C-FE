@@ -1,75 +1,27 @@
 import { useNavigate, useSearch, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { searchMovies } from "../../api/movies/search-movies";
-import type { TmdbMovieListItem } from "../../api/movies/models";
+import { useSearchMoviesQuery } from "../../queries/movie-queries";
 
 export function SearchPage() {
   const { query } = useSearch({ from: "/search" });
   const navigate = useNavigate({ from: "/search" });
 
+  const normalizedQuery = query?.trim() ?? "";
   const [searchText, setSearchText] = useState(query ?? "");
-  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data, isPending, isError } = useSearchMoviesQuery(normalizedQuery);
+  const movies = data?.results ?? [];
 
   useEffect(() => {
     setSearchText(query ?? "");
   }, [query]);
 
-  useEffect(() => {
-    let ignore = false;
-    const normalizedQuery = query?.trim() ?? "";
-
-    setMovies([]);
-    setErrorMessage(null);
-
-    if (!normalizedQuery) {
-      setIsLoading(false);
-      return;
-    }
-
-    async function loadMovies() {
-      setIsLoading(true);
-
-      try {
-        const response = await searchMovies({
-          query: normalizedQuery,
-        });
-
-        if (!ignore) {
-          setMovies(response.results);
-        }
-      } catch (error) {
-        console.error("영화 검색 실패:", error);
-
-        if (!ignore) {
-          setErrorMessage("검색 결과를 불러오지 못했어요.");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadMovies();
-
-    return () => {
-      ignore = true;
-    };
-  }, [query]);
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const nextQuery = searchText.trim();
-
-    navigate({
-      search: nextQuery ? { query: nextQuery } : {},
-    });
+    navigate({ search: nextQuery ? { query: nextQuery } : {} });
   }
 
-  const normalizedQuery = query?.trim() ?? "";
 
   return (
     <main className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-[1280px] px-8 py-10">
@@ -130,26 +82,26 @@ export function SearchPage() {
             </span>
           </div>
 
-          {isLoading && (
+          {isPending && (
             <p className="py-16 text-center text-gray-500">
               검색 중...
             </p>
           )}
 
-          {errorMessage && (
+          {isError && (
             <p className="py-16 text-center text-red-500">
-              {errorMessage}
+              ...검색 결과를 불러오지 못했어요.
             </p>
           )}
 
-          {!isLoading && !errorMessage && movies.length === 0 && (
+          {!isPending && !isError && movies.length === 0 && (
             <p className="py-20 text-center text-gray-500">
               검색 결과가 없어요.
             </p>
           )}
 
           {/* 영화 검색 결과 */}
-          {!isLoading && !errorMessage && movies.length > 0 && (
+          {!isPending && !isError && movies.length > 0 && (
             <div className="grid grid-cols-1 gap-x-10 md:grid-cols-2">
 
               {movies.map((movie) => {
