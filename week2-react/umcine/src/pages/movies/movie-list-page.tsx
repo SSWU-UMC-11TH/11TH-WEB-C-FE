@@ -14,16 +14,16 @@ export const MovieListPage = () => {
   useEffect(() => {
     let ignore = false;
     async function loadMovies() {
-      console.log("loadMovies 실행됨!"); // <- 이 로그가 찍히는지 확인
+      
       setIsLoading(true);
       setErrorMessage(null);
 
       try {
         const response = await getMovies({ page: 1 });
-        console.log("받아온 응답:", response); // <- 데이터가 오는지 확인
+        
         if (!ignore) setMovies(response.results);
       } catch (err) {
-        console.error("에러 발생:", err); // <- 에러가 나면 찍힘
+       
         if (!ignore) setErrorMessage("영화 목록을 불러오지 못했어요.");
       } finally {
         if (!ignore) setIsLoading(false);
