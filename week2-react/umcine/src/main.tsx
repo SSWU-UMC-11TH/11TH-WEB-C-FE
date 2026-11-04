@@ -14,6 +14,7 @@ const queryClient = new QueryClient({
   defaultOptions: { 
     queries: { 
       staleTime: ONE_MINUTE, // 캐시를 최신으로 취급하여 불필요한 재요청 방지
+      retry: 1,
     } 
   },
 });
