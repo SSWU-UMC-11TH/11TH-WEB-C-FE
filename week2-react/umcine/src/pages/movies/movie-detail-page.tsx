@@ -1,50 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { getMovieDetail } from "../../api/movies/get-movie-detail";
-import type { TmdbMovieDetail } from "../../api/movies/models";
+import { useMovieDetailQuery } from "../../queries/movie-queries";
 
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
+  const { data: movie, isPending, isError } = useMovieDetailQuery(Number(movieId));
 
-  const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadMovieDetail() {
-      setIsLoading(true);
-      setErrorMessage(null);
-      setMovie(null);
-
-      try {
-        const response = await getMovieDetail(Number(movieId));
-
-        if (!ignore) {
-          setMovie(response);
-        }
-      } catch (error) {
-        console.error("영화 상세 정보 조회 실패:", error);
-
-        if (!ignore) {
-          setErrorMessage("영화 정보를 불러오지 못했어요.");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadMovieDetail();
-
-    return () => {
-      ignore = true;
-    };
-  }, [movieId]);
-
-  if (isLoading) {
+  if (isPending) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center">
         <p className="text-gray-500">영화 정보를 불러오는 중이에요...</p>
@@ -52,17 +13,13 @@ export function MovieDetailPage() {
     );
   }
 
-  if (errorMessage || !movie) {
+  if (isError || !movie) {
     return (
       <main className="flex min-h-[70vh] flex-col items-center justify-center gap-5">
         <h2 className="text-2xl font-bold text-[#111111]">
-          {errorMessage ?? "영화를 찾을 수 없어요."}
+          {isError ? "영화 정보를 불러오지 못했어요." : "영화를 찾을 수 없어요."}
         </h2>
-
-        <Link
-          to="/"
-          className="rounded-xl bg-[#2f65f8] px-6 py-3 font-semibold text-white no-underline"
-        >
+        <Link to="/" className="rounded-xl bg-[#2f65f8] px-6 py-3 font-semibold text-white no-underline">
           영화 목록으로 돌아가기
         </Link>
       </main>
