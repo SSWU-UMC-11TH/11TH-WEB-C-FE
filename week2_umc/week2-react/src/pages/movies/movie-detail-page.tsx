@@ -1,23 +1,91 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { movies } from "../../data/movies";
+import { useEffect, useState } from "react";
+import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
-import { useState } from "react";
+import { getTmdbPosterUrl, getTmdbBackdropUrl } from "../../utils/movies/tmdb-image";
+import { getMovieDetail } from "../../api/movies/get-movie-detail";
+import { getMovieDetailErrorMessage } from "../../utils/movies/get-movie-detail-error-message";
 
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
-  const movie = movies.find((item) => item.id === Number(movieId));
 
-  // 평점 및 후기 관련 상태 추가
+  const parsedMovieId = Number(movieId);
+
+  // 영화 상세 데이터, 로딩, 에러 상태 관리
+  const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 평점 및 후기 관련 상태
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [review, setReview] = useState<string>("");
 
-  if (!movie) {
+  useEffect(() => {
+    let ignore = false;
+
+    // 유효한 ID 검증 (정수 및 0보다 큰 수)
+    const isValidId = Number.isInteger(parsedMovieId) && parsedMovieId > 0;
+
+    setMovie(null);
+    setErrorMessage(null);
+
+    if (!isValidId) {
+      setErrorMessage("올바르지 않은 영화 번호예요.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    getMovieDetail(parsedMovieId)
+      .then((data) => {
+        if (!ignore) {
+          setMovie(data);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          setErrorMessage(getMovieDetailErrorMessage(error));
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [parsedMovieId]);
+
+  const handleSaveReview = () => {
+    if (rating === 0) {
+      alert("별점을 선택해 주세요!");
+      return;
+    }
+    alert(`평점이 저장되었습니다.\n별점: ${rating}점\n후기: ${review}`);
+  };
+
+  // 로딩 상태 UI
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+        <div className="text-center py-[60px] text-[#6b7280]">
+          영화를 불러오는 중입니다...
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태 또는 데이터가 없는 경우 UI
+  if (errorMessage || !movie) {
     return (
       <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
         <main className="text-center py-[60px]">
           <h2 className="text-[18px] font-[700] text-[#111]">
-            영화를 찾을 수 없어요.
+            {errorMessage ?? "영화를 찾을 수 없어요."}
           </h2>
           <Link
             to="/"
@@ -30,27 +98,26 @@ export function MovieDetailPage() {
     );
   }
 
-  const handleSaveReview = () => {
-    if (rating === 0) {
-      alert("별점을 선택해 주세요!");
-      return;
-    }
-    alert(`평점이 저장되었습니다.\n별점: ${rating}점\n후기: ${review}`);
-  };
+  // runtime 시간 분 변환 및 null 처리
+  const formattedRuntime = movie.runtime
+    ? (() => {
+        const hours = Math.floor(movie.runtime / 60);
+        const minutes = movie.runtime % 60;
+        return hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
+      })()
+    : "상영 시간 정보가 없어요.";
 
-  const hours = Math.floor(movie.runtime / 60);
-  const minutes = movie.runtime % 60;
-  const formattedRuntime =
-    hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
+  const posterUrl = getTmdbPosterUrl(movie.poster_path);
+  const backdropUrl = getTmdbBackdropUrl(movie.backdrop_path);
 
   return (
     <div className="w-full min-h-screen bg-[#f4f5f7] font-sans text-[#111] flex flex-col justify-between">
       <div>
         {/* 상단 배경 영역 */}
         <section className="relative w-full h-[360px] bg-black text-white overflow-hidden">
-          {movie.backdropPath && (
+          {backdropUrl && (
             <img
-              src={movie.backdropPath}
+              src={backdropUrl}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover opacity-60"
@@ -71,10 +138,12 @@ export function MovieDetailPage() {
                 {movie.title}
               </h1>
               <p className="text-[13px] text-[#d1d5db] mb-[6px]">
-                {movie.originalTitle}
+                {movie.original_title}
               </p>
               <p className="text-[12px] text-[#9ca3af]">
-                {movie.releaseDate} {movie.genres.join(" · ")} {formattedRuntime}
+                {movie.release_date}{" "}
+                {movie.genres.map((g) => g.name).join(" · ")}{" "}
+                · {formattedRuntime}
               </p>
             </div>
           </div>
@@ -85,11 +154,17 @@ export function MovieDetailPage() {
           <div className="flex flex-col lg:flex-row gap-[32px] items-start justify-between">
             {/* 왼쪽: 포스터 & 개요 */}
             <div className="flex flex-col md:flex-row gap-[28px] items-start flex-1">
-              <img
-                src={movie.posterPath}
-                alt={`${movie.title} 포스터`}
-                className="w-[180px] h-[260px] object-cover rounded-[12px] shadow-md shrink-0"
-              />
+              {posterUrl ? (
+                <img
+                  src={posterUrl}
+                  alt={`${movie.title} 포스터`}
+                  className="w-[180px] h-[260px] object-cover rounded-[12px] shadow-md shrink-0"
+                />
+              ) : (
+                <div className="w-[180px] h-[260px] bg-[#e5e7eb] rounded-[12px] shadow-md shrink-0 flex items-center justify-center text-[12px] text-[#9ca3af]">
+                  이미지 없음
+                </div>
+              )}
 
               <div className="flex flex-col justify-start gap-[12px] flex-1">
                 {movie.tagline && (
@@ -102,7 +177,7 @@ export function MovieDetailPage() {
                 </p>
 
                 <div className="mt-[16px]">
-                <BookmarkButton movieId={movie.id} variant="detail" />
+                  <BookmarkButton movieId={movie.id} variant="detail" />
                 </div>
               </div>
             </div>
@@ -116,11 +191,11 @@ export function MovieDetailPage() {
                 별점은 필수, 후기는 선택이에요.
               </p>
 
-            {/* 별점 선택 카드 */}
+              {/* 별점 선택 카드 */}
               <div className="flex items-center justify-start gap-[4px] mb-[8px]">
                 {[1, 2, 3, 4, 5].map((star) => {
                   const activeRating = hoverRating || rating;
-                  return(
+                  return (
                     <button
                       key={star}
                       type="button"
@@ -133,7 +208,7 @@ export function MovieDetailPage() {
                         width="23"
                         height="23"
                         viewBox="0 0 24 24"
-                        fill={ activeRating >= star ? "#2563eb" : "#464749"}
+                        fill={activeRating >= star ? "#2563eb" : "#464749"}
                         className="transition-colors duration-150"
                       >
                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
