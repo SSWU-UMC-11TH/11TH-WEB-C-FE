@@ -52,9 +52,18 @@ useEffect(() => {
           </div>
         )}
 
-        {!isLoading && !errorMessage && <MovieGrid movies={movies} />}
-
-        <Pagination />
+        {!isLoading && !errorMessage && (
+          movies?.length > 0 ? (
+            <>
+              <MovieGrid movies={movies} />
+              <Pagination />
+            </>
+          ) : (
+            <div className="py-[40px] text-center text-[#6b7280]">
+              표시할 영화가 없습니다.
+            </div>
+          )
+        )}
       </main>
 
       <footer className="w-full border-t border-[#e5e7eb] bg-white py-[16px] mt-[40px]">
