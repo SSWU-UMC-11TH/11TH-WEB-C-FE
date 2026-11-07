@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import type { TmdbMovieDetail } from "../../api/movies/models";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getTmdbPosterUrl, getTmdbBackdropUrl } from "../../utils/movies/tmdb-image";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
@@ -11,54 +11,21 @@ export function MovieDetailPage() {
 
   const parsedMovieId = Number(movieId);
 
-  // 영화 상세 데이터, 로딩, 에러 상태 관리
-  const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 유효한 ID 검증 (정수 및 0보다 큰 수)
+  const isValidMovieId =
+    Number.isInteger(parsedMovieId) && parsedMovieId > 0;
+
+  // 영화 상세 데이터 요청
+  const movieDetailQuery = useQuery({
+    queryKey: ["movies", "detail", parsedMovieId],
+    queryFn: () => getMovieDetail(parsedMovieId),
+    enabled: isValidMovieId,
+  });
 
   // 평점 및 후기 관련 상태
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [review, setReview] = useState<string>("");
-
-  useEffect(() => {
-    let ignore = false;
-
-    // 유효한 ID 검증 (정수 및 0보다 큰 수)
-    const isValidId = Number.isInteger(parsedMovieId) && parsedMovieId > 0;
-
-    setMovie(null);
-    setErrorMessage(null);
-
-    if (!isValidId) {
-      setErrorMessage("올바르지 않은 영화 번호예요.");
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    getMovieDetail(parsedMovieId)
-      .then((data) => {
-        if (!ignore) {
-          setMovie(data);
-        }
-      })
-      .catch((error) => {
-        if (!ignore) {
-          setErrorMessage(getMovieDetailErrorMessage(error));
-        }
-      })
-      .finally(() => {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [parsedMovieId]);
 
   const handleSaveReview = () => {
     if (rating === 0) {
@@ -68,37 +35,61 @@ export function MovieDetailPage() {
     alert(`평점이 저장되었습니다.\n별점: ${rating}점\n후기: ${review}`);
   };
 
-  // 로딩 상태 UI
-  if (isLoading) {
-    return (
-      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
-        <div className="text-center py-[60px] text-[#6b7280]">
-          영화를 불러오는 중입니다...
-        </div>
-      </div>
-    );
-  }
+// 잘못된 영화 번호 처리
+if (!isValidMovieId) {
+  return (
+    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+      <main className="text-center py-[60px]">
+        <h2 className="text-[18px] font-[700] text-[#111]">
+          올바르지 않은 영화 번호예요.
+        </h2>
+        <Link
+          to="/"
+          className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
+        >
+          영화 목록으로 돌아가기
+        </Link>
+      </main>
+    </div>
+  );
+}
 
-  // 에러 상태 또는 데이터가 없는 경우 UI
-  if (errorMessage || !movie) {
-    return (
-      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
-        <main className="text-center py-[60px]">
-          <h2 className="text-[18px] font-[700] text-[#111]">
-            {errorMessage ?? "영화를 찾을 수 없어요."}
-          </h2>
-          <Link
-            to="/"
-            className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
-          >
-            영화 목록으로 돌아가기
-          </Link>
-        </main>
+// 로딩 상태 UI
+if (movieDetailQuery.isPending) {
+  return (
+    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+      <div className="text-center py-[60px] text-[#6b7280]">
+        영화를 불러오는 중입니다...
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  // runtime 시간 분 변환 및 null 처리
+// 에러 상태 또는 데이터가 없는 경우 UI
+if (movieDetailQuery.isError || !movieDetailQuery.data) {
+  return (
+    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+      <main className="text-center py-[60px]">
+        <h2 className="text-[18px] font-[700] text-[#111]">
+          {movieDetailQuery.isError
+            ? getMovieDetailErrorMessage(movieDetailQuery.error)
+            : "영화를 찾을 수 없어요."}
+        </h2>
+        <Link
+          to="/"
+          className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
+        >
+          영화 목록으로 돌아가기
+        </Link>
+      </main>
+    </div>
+  );
+}
+
+// 영화 상세 데이터
+const movie = movieDetailQuery.data;
+
+// runtime 시간 분 변환 및 null 처리
   const formattedRuntime = movie.runtime
     ? (() => {
         const hours = Math.floor(movie.runtime / 60);
