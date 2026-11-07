@@ -46,7 +46,7 @@ const handlePageChange = (nextPage: number) => {
       ) : (
         <>
           <MovieGrid movies={movies} />
-
+          
           <Pagination
             page={page}
             totalPages={totalPages}
