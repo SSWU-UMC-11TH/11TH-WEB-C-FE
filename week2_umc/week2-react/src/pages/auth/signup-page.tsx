@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
+import { signup } from "../../api/members/signup";
+// import { useNavigate } from "@tanstack/react-router";
 
 // 유효성 검사 정규식
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,6 +29,10 @@ type DuplicateCheckKey = "email" | "nickname";
 
 export function SignupPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
+
+  //폼제출 상태 관리
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const navigate = useNavigate();
 
   //중복 확인 상태 관리
   const [duplicateCheck, setDuplicateCheck] = useState({
@@ -108,11 +114,26 @@ export function SignupPage() {
   }
 };
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!isFormValid) return;
-    console.log("제출 성공:", form);
-  };
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  if (!canSubmit || isSubmitting) return;
+
+  setIsSubmitting(true);
+  try {
+    const response = await signup({
+      email: form.email.trim(),
+      nickname: form.nickname.trim(),
+      password: form.password,
+    });
+    alert(response.message);
+    // 로그인 페이지 연결 후 주석 해제
+    // navigate({ to: "/login" });
+  } catch {
+    alert("회원가입에 실패했어요. 다시 시도해 주세요.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-4 py-12">
@@ -247,14 +268,14 @@ export function SignupPage() {
           {/* 가입하기 버튼 */}
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isSubmitting}
             className={`w-full py-3.5 text-white font-medium rounded-lg transition-colors mt-6 ${
-              canSubmit
+              canSubmit && !isSubmitting
                 ? "bg-blue-500 hover:bg-blue-600 cursor-pointer"
                 : "bg-blue-300 cursor-not-allowed"
             }`}
           >
-            가입하기
+            {isSubmitting ? "가입 중" : "가입하기"}
           </button>
         </form>
 
