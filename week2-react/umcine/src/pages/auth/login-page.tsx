@@ -1,22 +1,32 @@
 
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!email.trim() || !password) {
-      alert("이메일과 비밀번호를 입력해 주세요.");
-      return;
-    }
+  if (!email.trim() || !password) {
+    alert("이메일과 비밀번호를 입력해 주세요.");
+    return;
+  }
 
-    // 현재는 화면 구현 단계이므로 입력값 확인
-    alert(`로그인 입력 확인\n이메일: ${email}`);
+  // 로그인한 사용자 정보 저장
+  const user = {
+    email: email.trim(),
+    nickname: email.trim().split("@")[0],
   };
+
+  localStorage.setItem("user", JSON.stringify(user));
+
+  alert("로그인되었습니다!");
+  navigate({ to: "/" });
+};
 
   return (
     <main className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-[#f5f6f8] px-5">

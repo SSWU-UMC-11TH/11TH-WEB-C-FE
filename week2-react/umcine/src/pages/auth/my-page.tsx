@@ -1,14 +1,36 @@
 
 import { useRef, useState } from "react";
 
+interface User {
+  email: string;
+  nickname: string;
+}
+
 export function MyPage() {
-  const [nickname, setNickname] = useState("gs0428");
-  const [email] = useState("gwangsoo@cinemalab.kr");
+  // localStorage에서 로그인 정보 가져오기
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem("user");
+
+    if (!savedUser) return null;
+
+    try {
+      return JSON.parse(savedUser) as User;
+    } catch {
+      return null;
+    }
+  });
+
+  // 닉네임 수정용 상태
+  const [nickname, setNickname] = useState(
+    user?.nickname ?? ""
+  );
+
+  // 프로필 이미지 상태
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 프로필 이미지 선택
+  // 프로필 이미지 변경
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -16,15 +38,13 @@ export function MyPage() {
 
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("프로필 이미지는 최대 5MB까지 업로드할 수 있어요.");
-      e.target.value = "";
+    if (!file.type.startsWith("image/")) {
+      alert("이미지 파일만 선택할 수 있어요.");
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      alert("이미지 파일만 선택할 수 있어요.");
-      e.target.value = "";
+    if (file.size > 5 * 1024 * 1024) {
+      alert("이미지는 5MB 이하만 업로드할 수 있어요.");
       return;
     }
 
@@ -32,27 +52,53 @@ export function MyPage() {
     setProfileImage(imageUrl);
   };
 
-  // 변경사항 저장
+  // 닉네임 저장
   const handleSave = () => {
-    if (nickname.trim().length < 2 || nickname.trim().length > 12) {
+    const trimmedNickname = nickname.trim();
+
+    if (trimmedNickname.length < 2 || trimmedNickname.length > 12) {
       alert("닉네임은 2~12자로 입력해 주세요.");
       return;
     }
 
-    setNickname(nickname.trim());
-    alert("변경사항이 저장되었습니다.");
-  };
-
-  // 회원 탈퇴
-  const handleWithdraw = () => {
-    const confirmed = window.confirm(
-      "정말 회원 탈퇴하시겠어요?\n탈퇴하면 작성한 평점과 후기가 삭제되며 복구할 수 없습니다."
-    );
-
-    if (confirmed) {
-      alert("현재는 화면 구현 단계로 실제 탈퇴는 처리되지 않습니다.");
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
     }
+
+    const updatedUser = {
+      ...user,
+      nickname: trimmedNickname,
+    };
+
+    // localStorage에 수정된 정보 저장
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+
+    // 화면에 수정된 정보 반영
+    setUser(updatedUser);
+    setNickname(trimmedNickname);
+
+    alert("변경사항이 저장되었습니다!");
   };
+
+  // 로그인하지 않은 경우
+  if (!user) {
+    return (
+      <main className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-[#f5f6f8]">
+        <div className="text-center">
+          <p className="mb-4 text-sm text-[#667085]">
+            로그인 후 이용할 수 있어요.
+          </p>
+          <a
+            href="/login"
+            className="rounded-lg bg-[#2f65f8] px-5 py-3 text-sm font-bold text-white no-underline"
+          >
+            로그인하기
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-[#f5f6f8] px-5 py-6 sm:px-8">
@@ -61,7 +107,7 @@ export function MyPage() {
         {/* 제목 및 저장 버튼 */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-tight text-[#191b20]">
+            <h1 className="text-[28px] font-extrabold text-[#191b20]">
               내 정보 수정
             </h1>
 
@@ -73,13 +119,13 @@ export function MyPage() {
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-lg bg-[#2f65f8] px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#1e50e6]"
+            className="rounded-lg bg-[#2f65f8] px-4 py-3 text-[13px] font-bold text-white hover:bg-[#1e50e6]"
           >
             변경사항 저장
           </button>
         </div>
 
-        {/* 프로필 및 정보 */}
+        {/* 프로필 및 회원 정보 */}
         <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
 
           {/* 프로필 이미지 */}
@@ -87,13 +133,12 @@ export function MyPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="relative flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-[#e1e4e9] transition-opacity hover:opacity-80"
-              aria-label="프로필 이미지 변경"
+              className="relative flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-full bg-[#e1e4e9]"
             >
               {profileImage ? (
                 <img
                   src={profileImage}
-                  alt="프로필 이미지"
+                  alt="프로필"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -107,20 +152,6 @@ export function MyPage() {
                   <path d="M3.5 21c0-4.4 3.8-7.2 8.5-7.2s8.5 2.8 8.5 7.2H3.5Z" />
                 </svg>
               )}
-
-              <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#f5f6f8] bg-white">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#191b20"
-                  strokeWidth="2"
-                >
-                  <path d="m14 5 5 5" />
-                  <path d="M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20Z" />
-                </svg>
-              </span>
             </button>
 
             <input
@@ -131,7 +162,7 @@ export function MyPage() {
               className="hidden"
             />
 
-            <p className="mt-1 text-[14px] font-bold text-[#191b20]">
+            <p className="mt-2 text-[14px] font-bold text-[#191b20]">
               프로필 이미지
             </p>
 
@@ -140,7 +171,7 @@ export function MyPage() {
             </p>
           </div>
 
-          {/* 회원 정보 입력 */}
+          {/* 회원 정보 */}
           <div className="flex flex-col gap-4">
 
             {/* 닉네임 */}
@@ -156,6 +187,7 @@ export function MyPage() {
                   onChange={(e) => setNickname(e.target.value)}
                   maxLength={12}
                   className="h-full w-full border-none bg-transparent text-sm outline-none"
+                  placeholder="닉네임을 입력해 주세요."
                 />
 
                 <span className="whitespace-nowrap text-xs font-bold text-[#2f65f8]">
@@ -170,12 +202,12 @@ export function MyPage() {
                 이메일
               </label>
 
-              <div className="flex h-12 items-center rounded-lg border border-[#dfe3e9] bg-white px-4">
+              <div className="flex h-12 items-center rounded-lg border border-[#dfe3e9] bg-[#f0f1f3] px-4">
                 <input
                   type="email"
-                  value={email}
+                  value={user.email}
                   readOnly
-                  className="h-full w-full border-none bg-transparent text-sm text-[#191b20] outline-none"
+                  className="h-full w-full border-none bg-transparent text-sm text-[#667085] outline-none"
                 />
               </div>
             </div>
@@ -196,8 +228,14 @@ export function MyPage() {
 
           <button
             type="button"
-            onClick={handleWithdraw}
-            className="shrink-0 rounded-lg border border-[#ff3838] bg-white px-4 py-3 text-[13px] font-bold text-[#e92727] transition-colors hover:bg-[#fff1f1]"
+            onClick={() => {
+              const confirmed = window.confirm("정말 회원 탈퇴하시겠어요?");
+
+              if (confirmed) {
+                alert("실제 회원 탈퇴 기능은 아직 연결되지 않았습니다.");
+              }
+            }}
+            className="shrink-0 rounded-lg border border-[#ff3838] bg-white px-4 py-3 text-[13px] font-bold text-[#e92727] hover:bg-[#fff1f1]"
           >
             회원 탈퇴
           </button>
