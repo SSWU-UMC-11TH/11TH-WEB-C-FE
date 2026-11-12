@@ -1,11 +1,15 @@
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState, type SubmitEvent } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState, type FormEvent } from "react";
+import { useBookmarkStore } from "../../stores/useBookmarkStore";
 import { movies } from "../../data/movies";
+import { MovieCard } from "../../components/movies/movie-card"
 
 export function SearchPage() {
   const { query } = useSearch({ from: "/search" });
   const navigate = useNavigate({ from: "/search" });
   const [searchText, setSearchText] = useState(query ?? "");
+
+  const { toggleBookmark, isBookmarked } = useBookmarkStore();
 
   useEffect(() => {
     setSearchText(query ?? "");
@@ -20,13 +24,19 @@ export function SearchPage() {
       )
     : [];
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextQuery = searchText.trim();
     navigate({
       search: nextQuery ? { query: nextQuery } : {},
     });
   }
+
+  //검색된 영화들에 현재 zustand 북마크 상태 매핑
+  const moviesWithBookmark = searchResults.map((movie) => ({
+    ...movie,
+    isBookmarked: isBookmarked(movie.id),
+  }))
 
   return (
     <main className="mx-auto max-w-[1280px] px-8 py-10 pb-20 w-full">
@@ -60,28 +70,17 @@ export function SearchPage() {
           {searchResults.length === 0 ? (
             <p className="text-center py-20 text-gray-500">검색 결과가 없어요.</p>
           ) : (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-5 gap-y-8 list-none p-0 m-0">
-              {searchResults.map((movie) => (
-                <li key={movie.id} className="flex flex-col group">
-                  <Link
-                    to="/movies/$movieId"
-                    params={{ movieId: String(movie.id) }}
-                    className="flex flex-col w-full cursor-pointer no-underline group"
-                  >
-                    <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-[#f0f2f5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-transform duration-200 group-hover:-translate-y-1">
-                      <img src={movie.posterPath} alt={`${movie.title} 포스터`} className="w-full h-full object-cover block" />
-                    </div>
-                    <div className="mt-3 flex flex-col gap-1">
-                      <h3 className="text-[15px] font-bold text-[#111111] truncate m-0" title={movie.title}>{movie.title}</h3>
-                      <p className="text-[13px] text-[#888888] m-0">{movie.originalTitle}</p>
-                      <p className="text-[13px] text-[#888888] m-0">{movie.releaseDate}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-5 gap-y-8">
+              {moviesWithBookmark.map((movie) => (
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  onToggleBookmark={toggleBookmark}
+                />
+          ))}
         </div>
+        )}
+      </div>
       )}
     </main>
   );
