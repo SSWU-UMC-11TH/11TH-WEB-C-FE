@@ -11,7 +11,7 @@ export const Header = () => {
         <div className="flex items-center gap-10">
           <Link to="/" className="flex items-center gap-2.5 text-xl font-extrabold text-[#111111] cursor-pointer no-underline">
             <span className="flex items-center">
-              <img src="/icons/logo-icon.svg" alt="" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+              <img src="/icons/movie.svg" alt="" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
             </span>
             <span><span className="text-[#2f65f8]">UMC</span>ine</span>
           </Link>
