@@ -4,7 +4,7 @@ export interface CheckEmailDuplicateResponse {
     available: boolean;
 }
 
-export function CheckEmailDuplicateResponse(email: string) {
+export function checkEmailDuplicate(email: string) {
     return apiClient
         .get(`members/email/${encodeURIComponent(email)}`)
         .json<CheckEmailDuplicateResponse>();

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { checkEmailDuplicate } from "../api/members/check-email-duplicate";
-import { checkNicknameDuplicate } from "../api/members/check-nickname-duplicate";
+import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
+import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
+import "./signup-page.css";
 
 const DEFAULT_DUPLICATE_CHECK = {
     isChecking: false,
@@ -25,6 +26,10 @@ type DefaultFormValue = (typeof DEFAULT_FORM)[DefaultFormKey];
 
 export function SignupPage() {
     const [form, setForm] = useState(DEFAULT_FORM);
+    const [duplicateCheck, setDuplicateCheck] = useState({
+        email: DEFAULT_DUPLICATE_CHECK,
+        nickname: DEFAULT_DUPLICATE_CHECK,
+    });
 
     // 입력값의 유효성 검사
     const isEmailValid = EMAIL_REGEX.test(form.email.trim());
@@ -41,8 +46,54 @@ export function SignupPage() {
     // 모든 입력값이 유효하면 제출 버튼 활성화
     const isFormValid = isEmailValid && isNicknameValid && isPasswordValid && isPasswordConfirmValid;
 
+    // 입력 조건과 두 중복 확인을 모두 통과해야 제출 가능
+    const canSubmit = isFormValid && duplicateCheck.email.isAvailable && duplicateCheck.nickname.isAvailable;
+
     const handleChangeField = (key: DefaultFormKey, value: DefaultFormValue) => {
+        if(key === "email" || key === "nickname") {
+            if(duplicateCheck[key].isChecking) return;
+            // 확인한 값을 바꾸면 다시 중복 확인해야 함
+            setDuplicateCheck((prev) => ({ ...prev, [key]: DEFAULT_DUPLICATE_CHECK}));
+        }
         setForm((prev) => ({ ...prev, [key]: value}));
+    };
+
+    const handleCheckDuplicate = async(key: duplicateCheckKey) => {
+        const isValid = key === "email" ? isEmailValid : isNicknameValid;
+        if(!isValid || duplicateCheck[key].isChecking) return;
+
+        const label = key === "email" ? "이메일" : "닉네임";
+        setDuplicateCheck((prev) => ({
+            ...prev,
+            [key]: { isChecking: true, isAvailable: false},
+        }));
+
+        try {
+            const response = 
+                key === "email"
+                    ? await checkEmailDuplicate(form.email.trim())
+                    : await checkNicknameDuplicate(form.nickname.trim());
+            const isAvailable = response.available;
+            setDuplicateCheck((prev) => ({
+                ...prev,
+                [key]: { ...prev[key], isAvailable},
+            }));
+            alert( isAvailable
+                    ? `사용할 수 있는 ${label}이에요.`
+                    : `이미 사용 중인 ${label}이에요.`,
+            );
+        } catch {
+            setDuplicateCheck((prev) => ({
+                ...prev,
+                [key]: { ...prev[key], isAvailable: false},
+            }));
+            alert("중복 확인에 실패했어요. 다시 시도해 주세요.");
+        } finally {
+            setDuplicateCheck((prev) => ({
+                ...prev,
+                [key]: {...prev[key], isChecking: false},
+            }));
+        }
     };
 
     const handleSubmit = (e:React.SubmitEvent<HTMLFormElement>) => {
@@ -53,11 +104,63 @@ export function SignupPage() {
     }
 
     return (
-        <form onSubmit={handleSubmit} noValidate>
-            <button type="submit" disabled={!isFormValid}>
-                가입하기
-            </button>
-            <input type="email" value={form.email} onChange={(e) => handleChangeField("email", e.target.value)}/>
-        </form>
+        <div className="signup-page">
+            <form className="signup-form" onSubmit={handleSubmit} noValidate>
+                <h1 className="signup-title">회원가입</h1>
+
+                <div className="form-group">
+                    <label htmlFor="email" className="form-label">이메일</label>
+                    <div className="input-row">
+                        <input id="email" type="email" className="form-input" placeholder="name@example.com" value={form.email}
+                        onChange={(e) => handleChangeField("email", e.target.value)} />
+                        <button type = "button" className="check-button" disabled={!isEmailValid || duplicateCheck.email.isChecking}
+                        onClick={() => handleCheckDuplicate("email")}>
+                            {duplicateCheck.email.isChecking ? "확인 중" : "중복 확인"}
+                        </button>
+                        {showEmailError && (
+                            <p className="error-text">올바른 이메일 형식을 입력해 주세요.</p>
+                        )}
+                    </div>
+                </div>
+
+                    <div className="form-group">
+                        <label htmlFor="nickname" className="form-label">닉네임</label>
+                        <input id="nickname" type="nickname" className="form-input" placeholder="2~12자" value={form.nickname}
+                        onChange={(e) => handleChangeField("nickname", e.target.value)}/>
+                        <button type="button" className="check-nutton" disabled={!isNicknameValid || duplicateCheck.nickname.isChecking}
+                        onClick={() => handleCheckDuplicate("nickname")}>
+                            {duplicateCheck.nickname.isChecking ? "확인 중" : "중복 확인"}
+                        </button>
+                        {showNicknameError && (
+                            <p className="error-text">올바른 닉네임 형식을 입력해 주세요.</p>
+                        )}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="password" className="form-label">비밀번호</label>
+                        <input id="password" type="password" className="form-input" placeholder="8자 이상" value={form.password}
+                        onChange={(e) => handleChangeField("password", e.target.value)}/>
+
+                        <p className="help-text">영문 대/소문자, 숫자, 특수기호를 모두 포함한 8자 이상 입력해주세요.</p>
+                        {showPasswordError && (
+                            <p className="error-text">비밀번호 형식이 올바르지 않습니다.</p>
+                        )}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="passwordConfirm" className="form-label">비밀번호 확인</label>
+                        <input id="passwordConfirm" type="password" className="form-input" placeholder="다시 입력" value={form.passwordConfirm}
+                        onChange={(e) => handleChangeField("passwordConfirm", e.target.value)} />
+                        {showPasswordConfirmError && (
+                            <p className="error-text">비밀번호가 일치하지 않습니다.</p>
+                        )}
+                    </div>
+                    <button type="submit" className="submit-button" disabled={!canSubmit}>
+                           가입하기
+                     </button>
+
+                     <p className="login-text">이미 계정이 있나요? <a href="/login">로그인</a></p>
+            </form>
+        </div>
     )
-}
+};

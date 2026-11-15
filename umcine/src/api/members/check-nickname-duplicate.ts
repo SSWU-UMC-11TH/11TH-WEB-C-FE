@@ -4,7 +4,7 @@ export interface CheckNicknameDuplicateResponse {
     available: boolean;
 }
 
-export function CheckNicknameDuplicateResponse(nickname: string) {
+export function checkNicknameDuplicate(nickname: string) {
     return apiClient
         .get(`members/nickname/${encodeURIComponent(nickname)}`)
         .json<CheckNicknameDuplicateResponse>();
