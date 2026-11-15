@@ -1,0 +1,288 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mypage {
+  min-height: 100vh;
+  background: #f7f8fa;
+  color: #191919;
+}
+
+/* =========================
+   Header
+========================= */
+
+.mypage-header {
+  height: 52px;
+  background: #ffffff;
+  border-bottom: 1px solid #e9ebee;
+}
+
+.header-inner {
+  width: calc(100% - 90px);
+  max-width: 1100px;
+  height: 100%;
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  margin-right: 35px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.header-inner nav {
+  display: flex;
+  gap: 24px;
+  font-size: 11px;
+  color: #60646c;
+}
+
+.header-inner nav span {
+  cursor: pointer;
+}
+
+.header-inner nav .active {
+  color: #17191c;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-button {
+  width: 30px;
+  height: 30px;
+
+  border: 1px solid #e4e6ea;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.login-button {
+  height: 30px;
+  padding: 0 13px;
+
+  border: none;
+  border-radius: 5px;
+  background: #356eea;
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* =========================
+   Main
+========================= */
+
+.mypage-content {
+  width: calc(100% - 120px);
+  max-width: 1050px;
+  min-height: 510px;
+
+  margin: 0 auto;
+  padding-top: 20px;
+}
+
+.mypage-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mypage-title-row h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.edit-button {
+  padding: 8px 12px;
+
+  border: none;
+  border-radius: 4px;
+
+  background: #3573ed;
+  color: white;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  margin: 17px 0 10px;
+
+  background: #e4e6e9;
+}
+
+/* =========================
+   Profile
+========================= */
+
+.profile-section h2,
+.favorite-section h2 {
+  margin: 0 0 14px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.profile-info {
+  min-height: 70px;
+
+  display: flex;
+  align-items: center;
+}
+
+.profile-image {
+  width: 55px;
+  height: 55px;
+
+  margin-right: 20px;
+
+  border-radius: 50%;
+  background: #e4e7eb;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 25px;
+}
+
+.profile-field {
+  min-width: 230px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  color: #9ca1a9;
+  font-size: 9px;
+}
+
+.profile-field strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* =========================
+   Favorite
+========================= */
+
+.favorite-section {
+  margin-top: 15px;
+}
+
+.movie-list {
+  display: flex;
+  gap: 12px;
+}
+
+.movie-card {
+  width: 165px;
+}
+
+.movie-card img {
+  display: block;
+
+  width: 165px;
+  height: 188px;
+
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.movie-card h3 {
+  margin: 7px 0 2px;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.movie-card p {
+  margin: 0;
+
+  color: #8e949c;
+  font-size: 9px;
+}
+
+.pagination {
+  margin-top: 25px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination button {
+  width: 25px;
+  height: 25px;
+
+  border: none;
+  border-radius: 5px;
+
+  background: transparent;
+
+  font-size: 12px;
+}
+
+.pagination button:disabled {
+  color: #c9d8ff;
+}
+
+.pagination .page-current {
+  background: #181b20;
+  color: white;
+}
+
+/* =========================
+   Footer
+========================= */
+
+.mypage-footer {
+  height: 32px;
+
+  border-top: 1px solid #e5e7ea;
+  background: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #858b93;
+  font-size: 8px;
+}
