@@ -1,4 +1,13 @@
 import { useState } from "react";
+import { checkEmailDuplicate } from "../api/members/check-email-duplicate";
+import { checkNicknameDuplicate } from "../api/members/check-nickname-duplicate";
+
+const DEFAULT_DUPLICATE_CHECK = {
+    isChecking: false,
+    isAvailable: false,
+};
+
+type duplicateCheckKey = "email" | "nickname";
 
 // 이메일 형식 검사
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
