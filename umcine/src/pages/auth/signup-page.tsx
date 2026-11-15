@@ -52,7 +52,15 @@ export function SignupPage() {
 
     // 입력 조건과 두 중복 확인을 모두 통과해야 제출 가능
     const canSubmit = isFormValid && duplicateCheck.email.isAvailable && duplicateCheck.nickname.isAvailable;
-
+console.log({
+    isEmailValid,
+    isNicknameValid,
+    isPasswordValid,
+    isPasswordConfirmValid,
+    emailAvailable: duplicateCheck.email.isAvailable,
+    nicknameAvailable: duplicateCheck.nickname.isAvailable,
+    canSubmit,
+});
     const handleChangeField = (key: DefaultFormKey, value: DefaultFormValue) => {
         if(key === "email" || key === "nickname") {
             if(duplicateCheck[key].isChecking) return;

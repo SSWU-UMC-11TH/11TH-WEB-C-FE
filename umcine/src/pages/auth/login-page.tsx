@@ -1,20 +1,44 @@
 import { useState, type FormEvent } from "react";
 import "./login-page.css";
+import { useNavigate } from "@tanstack/react-router";
+import { login } from "../../api/auth/login";
 
 export function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    const canSubmit = email.trim().length > 0 && password.length > 0 && !isLoading;;
+    const [errorMessage, setErrorMessage] = useState("");
 
-    const canSubmit = email.trim().length > 0 && password.length > 0;
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if(!canSubmit) return;
 
         // 로그인 API 연결
+        setIsLoading(true);
+        setErrorMessage("");
 
-        console.log("로그인 요청", { email });
+        try {
+            const response = await login({
+                email: email.trim(),
+                password,
+            });
+
+            const { nickname, accessToken } = response.result;
+
+            sessionStorage.setItem("accessToken", accessToken);
+
+            alert(`${nickname}님, 로그인에 성공했습니다!`);
+            await navigate({ to: "/"});
+        } catch (error) {
+            console.error("로그인 실패:", error);
+            setErrorMessage("로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -66,7 +90,10 @@ export function LoginPage() {
                     </div>
                 </div>
 
-                <button type="submit" className="login-submit-button" disabled={!canSubmit}>로그인</button>
+                <button type="submit" className="login-submit-button" disabled={!canSubmit}>{isLoading ? "로그인 중..." : "로그인"}</button>
+                {errorMessage && (
+                    <p className="login-error-text" role="alert">{errorMessage}</p>
+                )}
                 <p className="login-signup-text">처음이신가요?{" "}<a href="/signup">회원가입</a>
                 </p>
             </form>

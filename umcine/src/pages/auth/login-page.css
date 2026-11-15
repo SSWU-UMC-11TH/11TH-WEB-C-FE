@@ -100,3 +100,10 @@
     font-weight: 700;
     text-decoration: none;
 }
+
+.login-error-text {
+    margin-top: 10px;
+    color: #e5484d;
+    font-size: 12px;
+    text-align: center;
+}
