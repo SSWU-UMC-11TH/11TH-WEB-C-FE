@@ -2,6 +2,8 @@ import { useState } from "react";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
 import "./signup-page.css";
+import { signup } from "../../api/members/signup";
+// import { useNavigate } from "@tanstack/react-router";
 
 const DEFAULT_DUPLICATE_CHECK = {
     isChecking: false,
