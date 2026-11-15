@@ -12,18 +12,18 @@ export const MovieCard = ({ movie, onToggleBookmark }: MovieCardProps) => {
     <Link
       to="/movies/$movieId"
       params={{ movieId: String(movie.id) }}
-      className="flex w-full flex-col cursor-pointer group no-underline"
+      className="flex flex-col w-full cursor-pointer group no-underline"
     >
       <article className="flex w-full flex-col">
         <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[12px] bg-[#f0f2f5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-transform duration-200 group-hover:-translate-y-1">
           <img
-            src={movie.posterPath}
+            src={`https://image.tmdb.org/t/p/w500${movie.posterPath}`}
             alt={movie.title}
             className="block h-full w-full object-cover"
             loading="lazy"
           />
 
-          {/* 북마크 토글 버튼 */}
+          {/* 북마크 버튼 (클릭 시 상세 이동 방지) */}
           <button
             type="button"
             className={cn(
@@ -40,22 +40,11 @@ export const MovieCard = ({ movie, onToggleBookmark }: MovieCardProps) => {
             <img
               src={
                 movie.isBookmarked
-                  ? "/icons/bookmark-filled.svg"
-                  : "/icons/bookmark-empty.svg"
+                  ? "/icons/bookmark.svg"
+                  : "/icons/bookmark-outline.svg"
               }
               alt=""
-              className="h-[18px] w-[18px] object-contain"
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.style.display = "none";
-                const parent = target.parentElement;
-                if (parent && !parent.querySelector(".fallback-text")) {
-                  const span = document.createElement("span");
-                  span.className = "text-white text-[16px] leading-none fallback-text";
-                  span.innerText = movie.isBookmarked ? "★" : "☆";
-                  parent.appendChild(span);
-                }
-              }}
+              className="h-[18px] w-[18px] object-contain brightness-0 invert"
             />
           </button>
         </div>
