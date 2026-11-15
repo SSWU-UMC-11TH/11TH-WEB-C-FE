@@ -9,7 +9,7 @@ import Footer from "../../components/layout/footer.tsx";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
-   
+    
     // 영화 ID를 숫자로 변환
     const movieId = Number(movieIdParam);
 
@@ -21,8 +21,9 @@ export function MovieDetailPage() {
         queryKey: ["movies", "detail", movieId],
         queryFn: () => getMovieDetail(movieId),
         enabled: isValidMovieId,
+        staleTime: 30_000,
     });
-    
+
     
     // 잘못된 영화 id 처리
     if (!isValidMovieId) {
