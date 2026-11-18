@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiMail, FiLock } from "react-icons/fi";
 // import { useNavigate } from "@tanstack/react-router"; // TODO: 로그인 성공 후 이동 처리 시 주석 해제
+import{Link} from "@tanstack/react-router";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX =
@@ -122,9 +123,10 @@ export function LoginPage() {
         {/* 하단 회원가입 이동 링크 */}
         <div className="text-center text-xs text-gray-500 pt-1">
           처음이신가요?{" "}
-          <span className="text-blue-600 font-semibold hover:underline cursor-pointer">
+          <Link
+              to="/signup" className="text-blue-600 font-semibold hover:underline cursor-pointer">
             회원가입
-          </span>
+          </Link>
         </div>
       </div>
     </div>
