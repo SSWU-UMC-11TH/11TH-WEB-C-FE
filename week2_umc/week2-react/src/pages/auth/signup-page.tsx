@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
-import {  useSignupMutation } from "../../hook/use-signup-mutation";
+import {  useSignupMutation } from "../../hooks/use-signup-mutation";
 import { Link } from "@tanstack/react-router";
 
 // 유효성 검사 정규식
