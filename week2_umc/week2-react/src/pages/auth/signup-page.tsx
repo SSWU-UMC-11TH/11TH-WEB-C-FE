@@ -2,7 +2,8 @@ import { useState } from "react";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
 import { signup } from "../../api/members/signup";
-// import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 // 유효성 검사 정규식
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,7 +33,7 @@ export function SignupPage() {
 
   //폼제출 상태 관리
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   //중복 확인 상태 관리
   const [duplicateCheck, setDuplicateCheck] = useState({
@@ -126,8 +127,7 @@ export function SignupPage() {
       password: form.password,
     });
     alert(response.message);
-    // 로그인 페이지 연결 후 주석 해제
-    // navigate({ to: "/login" });
+    navigate({ to: "/login" });
   } catch {
     alert("회원가입에 실패했어요. 다시 시도해 주세요.");
   } finally {
@@ -282,9 +282,10 @@ export function SignupPage() {
         {/* 로그인 링크 */}
         <div className="text-center text-sm text-gray-500 pt-2">
           이미 계정이 있나요?{" "}
-          <span className="text-blue-500 font-medium hover:underline">
+            <Link
+             to="/login" className="text-blue-500 font-medium hover:underline">
             로그인
-          </span>
+          </Link>
         </div>
       </div>
     </div>
