@@ -1,5 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { FiUser } from "react-icons/fi";
+import { getMe } from "../../api/members/me";
+import { useAuthStore } from "../../stores/auth-store";
 
 const MOCK_FAVORITES = [
   {
@@ -7,7 +10,7 @@ const MOCK_FAVORITES = [
     title: "스파이더맨: 브랜드 뉴 데이",
     date: "2026.07.29",
     poster:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZvMj_YYELXN4av8Fnv2r2AeCwqHVFUKsmHZsnQqmUBg&s=10   ",
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZvMj_YYELXN4av8Fnv2r2AeCwqHVFUKsmHZsnQqmUBg&s=10",
   },
   {
     id: 2,
@@ -27,6 +30,14 @@ const MOCK_FAVORITES = [
 
 export function MyPage() {
   const navigate = useNavigate();
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    enabled: Boolean(accessToken),
+    retry: false,
+  });
 
   const handleGoToEdit = () => {
     navigate({ to: "/my/edit" });
@@ -58,12 +69,14 @@ export function MyPage() {
             <div className="flex gap-16 text-xs">
               <div>
                 <span className="block text-gray-400 mb-1">닉네임</span>
-                <span className="font-bold text-gray-900 text-sm">loki_11th</span>
+                <span className="font-bold text-gray-900 text-sm">
+                  {meQuery.isLoading ? "불러오는 중..." : (meQuery.data?.nickname ?? "-")}
+                </span>
               </div>
               <div>
                 <span className="block text-gray-400 mb-1">이메일</span>
                 <span className="font-bold text-gray-900 text-sm">
-                  seoyoung@cinemalab.kr
+                  {meQuery.isLoading ? "불러오는 중..." : (meQuery.data?.email ?? "-")}
                 </span>
               </div>
             </div>
@@ -77,7 +90,10 @@ export function MyPage() {
           {/* 카드 배치 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
             {MOCK_FAVORITES.map((movie) => (
-              <div key={movie.id} className="flex flex-col items-start w-full group cursor-pointer">
+              <div
+                key={movie.id}
+                className="flex flex-col items-start w-full group cursor-pointer"
+              >
                 <div className="relative w-full aspect-[1/1.05] rounded-[12px] overflow-hidden bg-[#e5e7eb] shadow-sm">
                   <img
                     src={movie.poster}

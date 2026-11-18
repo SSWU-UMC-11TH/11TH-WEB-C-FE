@@ -1,12 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiUser, FiEdit2 } from "react-icons/fi";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../api/members/me";
+import { useAuthStore } from "../../stores/auth-store";
+import { useUpdateMeMutation } from "../../hooks/use-update-me-mutation";
 
 export function MyEditPage() {
-  const [nickname, setNickname] = useState("loki_11th");
-  const email = "seoyoung@cinemalab.kr";
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    enabled: Boolean(accessToken),
+    retry: false,
+  });
 
+  const [nickname, setNickname] = useState("");
+  const email = meQuery.data?.email ?? "";
+  const updateMeMutation = useUpdateMeMutation();
+
+  useEffect(() => {
+    if (meQuery.data?.nickname) {
+      setNickname(meQuery.data.nickname);
+    }
+  }, [meQuery.data?.nickname]);
+
+  const trimmedNickname = nickname.trim();
   const isNicknameValid =
-    nickname.trim().length >= 2 && nickname.trim().length <= 12;
+    trimmedNickname.length >= 2 && trimmedNickname.length <= 12;
 
   const handleCheckDuplicate = () => {
     if (!isNicknameValid) return;
@@ -14,7 +34,9 @@ export function MyEditPage() {
   };
 
   const handleSave = () => {
-    alert("변경사항이 저장되었습니다.");
+    if (!isNicknameValid || updateMeMutation.isPending) return;
+
+    updateMeMutation.mutate({ nickname: trimmedNickname });
   };
 
   const handleWithdraw = () => {
@@ -28,7 +50,7 @@ export function MyEditPage() {
       {/* 메인 콘텐츠 영역 */}
       <div className="max-w-[1080px] w-full mx-auto px-[20px] pt-10 pb-16 flex-1 flex flex-col justify-between">
         <div>
-          {/* 상단 헤더: 제목/설명(좌측) & 변경사항 저장 버튼(우측) */}
+          {/* 상단 헤더 */}
           <div className="flex justify-between items-start mb-10">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">내 정보 수정</h1>
@@ -38,10 +60,11 @@ export function MyEditPage() {
             </div>
             <button
               onClick={handleSave}
-              className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
+              disabled={!isNicknameValid || updateMeMutation.isPending}
+              className="bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-blue-300 disabled:cursor-not-allowed text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
               type="button"
             >
-              변경사항 저장
+              {updateMeMutation.isPending ? "저장 중..." : "변경사항 저장"}
             </button>
           </div>
 
