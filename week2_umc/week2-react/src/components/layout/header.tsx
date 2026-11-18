@@ -37,8 +37,11 @@ export function Header() {
           </Link>
 
           <Link
-            to="/"
-            className="no-underline text-[13px] font-[600] text-[#6b7280] hover:text-[#111111] transition-colors"
+            to="/my"
+            className={cn(
+              "no-underline text-[13px] font-[600] text-[#6b7280] transition-colors hover:text-[#111111]",
+              pathname === "/my" && "text-[#111111] font-bold"
+            )}
           >
             내 정보
           </Link>
@@ -66,12 +69,13 @@ export function Header() {
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
           </Link>
-          <button
+          
+          <Link
+            to="/login"
             className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
-            type="button"
           >
             로그인
-          </button>
+          </Link>
         </div>
       </div>
     </header>
