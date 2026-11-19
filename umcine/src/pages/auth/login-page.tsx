@@ -1,44 +1,21 @@
-import { useState, type FormEvent } from "react";
+import { useState} from "react";
 import "./login-page.css";
-import { useNavigate } from "@tanstack/react-router";
-import { login } from "../../api/auth/login";
+import { useLoginMutation } from "../../hooks/use-login-mutation";
 
 export function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
-    const canSubmit = email.trim().length > 0 && password.length > 0 && !isLoading;;
-    const [errorMessage, setErrorMessage] = useState("");
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const [form, setForm] = useState({ email: "", password: "",});
+    const loginMutation = useLoginMutation();
+    const canSubmit = EMAIL_REGEX.test(form.email.trim()) && form.password.length > 0;
 
+    const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if(!canSubmit || loginMutation.isPending) return;
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
-        if(!canSubmit) return;
-
-        // 로그인 API 연결
-        setIsLoading(true);
-        setErrorMessage("");
-
-        try {
-            const response = await login({
-                email: email.trim(),
-                password,
-            });
-
-            const { nickname, accessToken } = response.result;
-
-            sessionStorage.setItem("accessToken", accessToken);
-
-            alert(`${nickname}님, 로그인에 성공했습니다!`);
-            await navigate({ to: "/"});
-        } catch (error) {
-            console.error("로그인 실패:", error);
-            setErrorMessage("로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.");
-        } finally {
-            setIsLoading(false);
-        }
+        loginMutation.mutate({
+            email: form.email.trim(),
+            password: form.password,
+        });
     };
 
     return (
@@ -62,8 +39,8 @@ export function LoginPage() {
                             <path d="m3 7 9 6 9-6"/>
                         </svg>
 
-                        <input id="email" type="email" className="login-input" placeholder="name@example.com" autoComplete="email" value={email}
-                        onChange={(e) => setEmail(e.target.value)} required></input>
+                        <input id="email" type="email" className="login-input" placeholder="name@example.com" autoComplete="email" value={form.email}
+                        onChange={(e) => setForm({...form, email: e.target.value})}></input>
                     </div>
                 </div>
 
@@ -85,14 +62,14 @@ export function LoginPage() {
                             <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                         </svg>
 
-                        <input id="password" type="password" className="login-input" placeholder="비밀번호" autoComplete="current-password" value={password}
-                        onChange={(e) => setPassword(e.target.value)} required />
+                        <input id="password" type="password" className="login-input" placeholder="비밀번호" autoComplete="current-password" value={form.password}
+                        onChange={(e) => setForm({...form, password: e.target.value})}/>
                     </div>
                 </div>
 
-                <button type="submit" className="login-submit-button" disabled={!canSubmit}>{isLoading ? "로그인 중..." : "로그인"}</button>
-                {errorMessage && (
-                    <p className="login-error-text" role="alert">{errorMessage}</p>
+                <button type="submit" className="login-submit-button" disabled={!canSubmit || loginMutation.isPending}>{loginMutation.isPending ? "로그인 중..." : "로그인"}</button>
+                {loginMutation.isError && (
+                    <p className="login-error-text" role="alert">로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.</p>
                 )}
                 <p className="login-signup-text">처음이신가요?{" "}<a href="/signup">회원가입</a>
                 </p>
