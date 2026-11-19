@@ -1,4 +1,5 @@
 import ky from "ky";
+import { useAuthStore } from "../../stores/auth-store";
 
 export interface MemberInfo {
     email: string;
@@ -12,7 +13,7 @@ interface MemberInfoApiResponse {
 }
 
 export async function getMyInfo(): Promise<MemberInfo> {
-    const accessToken = sessionStorage.getItem("accessToken");
+    const accessToken = useAuthStore.getState().accessToken;
 
     if(!accessToken) {
         throw new Error("로그인이 필요합니다.");
