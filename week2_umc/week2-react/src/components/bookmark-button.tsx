@@ -1,31 +1,80 @@
-import { useBookmarkStore } from "../stores/bookmark-store";
+import { useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getFavoriteStatus } from "../api/favorites/get-favorite-status";
+import { addFavorite } from "../api/favorites/add-favorite";
+import { removeFavorite } from "../api/favorites/remove-favorite";
+import { useAuthStore } from "../stores/auth-store";
 import { cn } from "../utils/cn";
 
 interface BookmarkButtonProps {
   movieId: number;
-  variant?: "card" | "detail"; // 카드/상세 페이지 디자인 구분
+  variant?: "card" | "detail";
 }
 
 export function BookmarkButton({
   movieId,
   variant = "card",
 }: BookmarkButtonProps) {
-  const isBookmarked = useBookmarkStore((state) =>
-    state.bookmarkedMovieIds.includes(movieId)
-  );
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isLoggedIn = Boolean(accessToken);
 
-  const toggleBookmark = useBookmarkStore(
-    (state) => state.toggleBookmark
-  );
+  // 1. 해당 영화의 즐겨찾기 여부 조회 (GET /favorites/{movieId})
+  const favoriteStatusQuery = useQuery({
+    queryKey: ["favorites", "status", movieId],
+    queryFn: () => getFavoriteStatus(movieId),
+    enabled: isLoggedIn && movieId > 0,
+  });
+
+  const isBookmarked = favoriteStatusQuery.data?.isFavorite ?? false;
+
+  // 2. 즐겨찾기 등록 / 해제 뮤테이션 (POST /favorites, DELETE /favorites/{movieId})
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      if (isBookmarked) {
+        await removeFavorite(movieId);
+      } else {
+        await addFavorite(movieId);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["favorites", "status", movieId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["favorites"],
+      });
+    },
+    onError: () => {
+      alert("즐겨찾기 처리에 실패했습니다. 다시 시도해 주세요.");
+    },
+  });
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isLoggedIn) {
+      if (confirm("로그인이 필요한 기능입니다. 로그인 페이지로 이동할까요?")) {
+        navigate({ to: "/login" });
+      }
+      return;
+    }
+
+    if (toggleMutation.isPending) return;
+    toggleMutation.mutate();
+  };
 
   // 상세 페이지용 버튼
   if (variant === "detail") {
     return (
       <button
         type="button"
-        onClick={() => toggleBookmark(movieId)}
+        onClick={handleClick}
+        disabled={toggleMutation.isPending}
         className={cn(
-          "inline-flex items-center gap-[8px] px-[18px] py-[10px] rounded-[10px] text-[13px] font-[600] cursor-pointer transition-all duration-200 ease-in-out shadow-sm active:scale-95 border",
+          "inline-flex items-center gap-[8px] px-[18px] py-[10px] rounded-[10px] text-[13px] font-[600] cursor-pointer transition-all duration-200 ease-in-out shadow-sm active:scale-95 border disabled:opacity-60",
           isBookmarked
             ? "bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-[#1d4ed8]"
             : "bg-white hover:bg-[#f9fafb] text-[#374151] border-[#e5e7eb]"
@@ -53,15 +102,15 @@ export function BookmarkButton({
   return (
     <button
       type="button"
-      onClick={() => toggleBookmark(movieId)}
+      onClick={handleClick}
+      disabled={toggleMutation.isPending}
       className={cn(
-        "absolute top-[8px] right-[8px] w-[28px] h-[28px] rounded-[6px] flex items-center justify-center p-0 cursor-pointer transition-all duration-200 ease-in-out border",
+        "absolute top-[8px] right-[8px] w-[28px] h-[28px] rounded-[6px] flex items-center justify-center p-0 cursor-pointer transition-all duration-200 ease-in-out border disabled:opacity-60",
         isBookmarked
           ? "bg-[#2563eb] border-[#1d4ed8]"
           : "bg-black/80 border-white/20"
       )}
     >
-      {/* Zustand 상태에 따라 아이콘 변경 */}
       <img
         src={
           isBookmarked
