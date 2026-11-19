@@ -6,6 +6,8 @@ import { BookmarkButton } from "../../components/bookmark-button";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
 import {getMovieDetailErrorMessage} from "../../utils/movies/get-movie-detail-error-message.ts";
 import Footer from "../../components/layout/footer.tsx";
+import { getFavoriteStatus } from "../../api/favorites/get-favorite-status.ts";
+import { useAuthStore } from "../../stores/auth-store.ts";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
@@ -24,7 +26,17 @@ export function MovieDetailPage() {
         staleTime: 30_000,
     });
 
-    
+    // 로그인 토큰
+    const accessToken = useAuthStore((state) => state.accessToken);
+
+    // 서버에서 즐겨찾기 여부 조회
+    const favoriteStatusQuery = useQuery({
+        queryKey: ["favorites", "status", movieId],
+        queryFn: () => getFavoriteStatus(movieId),
+        enabled: !!accessToken && Number.isSafeInteger(movieId) && movieId > 0,
+    });
+
+
     // 잘못된 영화 id 처리
     if (!isValidMovieId) {
         return (
@@ -88,6 +100,7 @@ export function MovieDetailPage() {
         ? `${Math.floor(movie.runtime / 60)}시간 ${movie.runtime % 60}분`
             : "상영 시간 정보가 없어요.";
 
+   
     return (
         <main className="min-h-screen bg-[#F7F8FA] text-gray-900">
             {/* 상단 배경 이미지 */}
@@ -118,6 +131,24 @@ export function MovieDetailPage() {
                         {movie.original_title}
                     </p>
                     <BookmarkButton movieId={movie.id} />
+
+                    {accessToken && (
+                        favoriteStatusQuery.isPending ? (
+                            <p className="text-sm text-gray-300">
+                                 즐겨찾기 확인 중...
+                            </p>
+                    ) : favoriteStatusQuery.isError ? (
+                             <p className="text-sm text-red-300">
+                                즐겨찾기 상태를 불러오지 못했어요.
+                             </p>
+                    ) : (
+                            <p className="text-sm text-gray-200">
+                                 {favoriteStatusQuery.data.isFavorite
+                                    ? "즐겨찾기 등록됨"
+                                    : "즐겨찾기 미등록"}
+                            </p>
+                    )
+                )}
 
                     <p className="mt-2 text-sm text-gray-200">
                         {movie.release_date} · {genres} · {runtime}
