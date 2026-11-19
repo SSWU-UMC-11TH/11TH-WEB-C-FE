@@ -6,21 +6,19 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-    nickname: string;
-    accessToken: string;
-}
-
-export interface LoginApiResponse {
     isSuccess: boolean;
     code: string;
     message: string;
-    result: LoginResponse;
+    result: {
+        nickname: string;
+        accessToken: string;
+    }
 }
 
-export function login(data: LoginRequest) {
+export function login(body: LoginRequest) {
     return apiClient
         .post("auth/login", {
-            json: data,
+            json: body,
         })
-        .json<LoginApiResponse>();
+        .json<LoginResponse>();
 }

@@ -121,23 +121,6 @@ console.log({
             password: form.password
         })
 
-    //     setIsSubmitting(true);
-    //     try{
-    //         const response = await signup({
-    //             email: form.email.trim(),
-    //             nickname: form.nickname.trim(),
-    //             password: form.password,
-    //         });
-    //         alert(response.message);
-    //         // 로그인 페이지 연결 후 주석 해제
-    //         // navigate({ to: "/login"});
-    //     } catch {
-    //         alert("회원가입에 실패했어요. 다시 시도해 주세요.");
-    //     } finally {
-    //         setIsSubmitting(false);
-    //     }
-    // };
-
     return (
         <div className="signup-page">
             <form className="signup-form" onSubmit={handleSubmit} noValidate>
