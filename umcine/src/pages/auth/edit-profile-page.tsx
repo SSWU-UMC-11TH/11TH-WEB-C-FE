@@ -2,6 +2,7 @@ import { useEffect, useRef, useState} from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getMyInfo } from "../../api/members/get-my-info";
+import { useUpdateMeMutation } from "../../hooks/use-update-me-mutation";
 
 export function EditProfilePage() {
     const memberQuery = useQuery({
@@ -10,14 +11,24 @@ export function EditProfilePage() {
         retry: false,
     });
 
-    const[nickname, setNickname] = useState("");
+    const [form, setForm] = useState({ nickname: "",});
     const[profilePreview, setProfilePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const updateMeMutation = useUpdateMeMutation();
+    const nickname = form.nickname.trim();
+    const canSubmit = nickname.length >= 2 && nickname.length <= 12;
+
+    const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!canSubmit || updateMeMutation.isPending) return;
+
+        updateMeMutation.mutate({ nickname });
+    };
 
     // 서버에서 가져온 현재 닉네임 표시
     useEffect(() => {
         if(memberQuery.data) {
-            setNickname(memberQuery.data.nickname);
+            setForm({ nickname: memberQuery.data.nickname});
         }
     }, [memberQuery.data]);
 
@@ -70,7 +81,7 @@ export function EditProfilePage() {
 
     return (
         <main className="min-h-screen bg-[#F7F8FA] text-gray-900">
-            <div className="mx-auto max-w-[1200px] px-6 py-8">
+            <form onSubmit={handleSubmit} className="mx-auto max-w-[1200px] px-6 py-8">
 
                 {/* 페이지 제목 */}
                 <div className="flex items-start justify-between">
@@ -85,11 +96,11 @@ export function EditProfilePage() {
                     </div>
 
                     <button
-                        type="button"
-                        disabled
+                        type="submit"
+                        disabled={!canSubmit || updateMeMutation.isPending}
                         className="rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        변경사항 저장
+                        {updateMeMutation.isPending ? "저장 중" : "저장"}
                     </button>
                 </div>
 
@@ -167,9 +178,9 @@ export function EditProfilePage() {
                                 <input
                                     id="nickname"
                                     type="text"
-                                    value={nickname}
+                                    value={form.nickname}
                                     onChange={(e) =>
-                                        setNickname(e.target.value)
+                                        setForm({ ...form, nickname: e.target.value})
                                     }
                                     className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-24 text-sm outline-none focus:border-blue-500"
                                 />
@@ -227,7 +238,7 @@ export function EditProfilePage() {
                         </button>
                     </div>
                 </section>
-            </div>
+            </form>
         </main>
     );
 }
