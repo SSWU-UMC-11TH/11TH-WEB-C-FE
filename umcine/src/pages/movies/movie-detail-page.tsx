@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TmdbMovieDetail } from "../../api/movies/models";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
@@ -8,15 +8,21 @@ import {getMovieDetailErrorMessage} from "../../utils/movies/get-movie-detail-er
 import Footer from "../../components/layout/footer.tsx";
 import { getFavoriteStatus } from "../../api/favorites/get-favorite-status.ts";
 import { useAuthStore } from "../../stores/auth-store.ts";
+import { getMyInfo } from "../../api/members/get-my-info.ts";
+import { getMemberRatings } from "../../api/ratings/rating-api.ts";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
+    const [score, setScore] = useState(0);
+    const [comment, setComment] = useState("");
     
     // 영화 ID를 숫자로 변환
     const movieId = Number(movieIdParam);
 
     // 올바른 영화 ID인지 확인
     const isValidMovieId = Number.isSafeInteger(movieId) && movieId > 0;
+
+    const QueryClient = useQueryClient();
 
     // Tanstack Query로 영화 상세 정보 요청
     const movieDetailQuery = useQuery({
@@ -35,6 +41,73 @@ export function MovieDetailPage() {
         queryFn: () => getFavoriteStatus(movieId),
         enabled: !!accessToken && Number.isSafeInteger(movieId) && movieId > 0,
     });
+
+    // 로그인한 회원 정보 조회
+    const memberQuery = useQuery({
+        queryKey: ["members", "me"],
+        queryFn: getMyInfo,
+        enabled: !!accessToken,
+    });
+
+    const memberId = memberQuery.data?.memberId;
+
+    // 회원 평점 조회
+    const ratingsQuery = useQuery({
+        queryKey: ["ratings", "member", memberId],
+        queryFn: () => {
+            if(memberId == null) {
+                throw new Error("회원 ID가 없습니다.");
+            }
+            return getMemberRatings(memberId);
+        },
+        enabled: !!accessToken && memberId != null,
+    });
+
+    // 현재 영화에 등록한 평점
+    const myRating = ratingsQuery.data?.find((rating) => rating.movieId === movieId);
+
+    // 기존 평점이 있으면 입력창에 표시
+    useEffect(() => {
+        setScore(myRating?.score ?? 0);
+        setComment(myRating?.comment ?? "");
+    }, [
+        movieId,
+        myRating?.ratingId,
+        myRating?.score,
+        myRating?.comment,
+    ]);
+
+    // 평점 등록 또는 수정
+    // const saveRatingMutation = useMutation({
+    //     mutationFn: () => {
+    //         const request = {
+    //             score, 
+    //             comment: comment.trim(),
+    //         };
+
+    //          if(myRating) {
+    //              return updateRating(myRating.ratingId, request);
+    //          }
+
+    //         return CreateRating({movieId, ...request,});
+    //     },
+
+    //     onSuccess: async () => {
+    //         await QueryClient.invalidateQueries({
+    //             queryKey: ["ratings", "member", memberId],
+    //         });
+
+    //         alert("평점이 저장됐어요.");
+    //     },
+    //     onError: (error) => {
+    //         console.error("평점 저장 실패:", error);
+    //         alert("평점 저장에 실패했어요.");
+    //     },
+    // });
+
+    // 저장 가능 여부
+    // const canSaveRating = !!accessToken && memberId != null && ratingsQuery.isSuccess && !saveRatingMutation.isPending &&
+    //                      Number.isInteger(score) && score >= 1 && score <= 5 && comment.length <= 500;
 
 
     // 잘못된 영화 id 처리
@@ -189,27 +262,47 @@ export function MovieDetailPage() {
                     </p>
 
                     {/* 별점 UI */}
-                    <div className="mb-4 flex gap-2 text-2xl text-gray-400">
-                        <span>★</span>
-                        <span>★</span>
-                        <span>★</span>
-                        <span>★</span>
-                        <span>★</span>
+                    <div className="mb-4 flex gap-2 text-2xl">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                     <button
+                         key={star}
+                        type="button"
+                        onClick={() => setScore(star)}
+                         aria-label={`${star}점`}
+                        aria-pressed={score === star}
+                        className={
+                                star <= score
+                                     ? "text-yellow-400"
+                                    : "text-gray-400"
+                        }
+                            >
+                                ★
+                             </button>
+                        ))}
                     </div>
 
                     {/* 감상평 입력 */}
                     <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        maxLength={500}
                         placeholder="영화에 대한 감상을 남겨주세요."
                         className="h-28 w-full resize-none rounded-lg border border-gray-200 bg-white p-3 text-sm outline-none focus:border-blue-500"
                     />
 
                     {/* 저장 버튼 */}
-                    <button
+                    {/* <button
                         type="button"
+                        onClick={() => saveRatingMutation.mutate()}
+                        disabled={!canSaveRating}
                         className="mt-3 w-full rounded-md bg-gray-900 py-3 text-sm font-medium text-white hover:bg-gray-800"
                     >
-                        평점 저장
-                    </button>
+                        {saveRatingMutation.isPending
+                            ? "저장 중..."
+                            : myRating
+                                ? "평점 수정"
+                                : "평점 등록"}
+                    </button> */}
                     <Footer/>
                 </aside>
             </section>
