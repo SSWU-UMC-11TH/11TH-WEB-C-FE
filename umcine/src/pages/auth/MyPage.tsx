@@ -3,14 +3,15 @@ import { useQueries } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router"
 import "./MyPage.css";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
-import { useBookmarkStore } from "../../stores/bookmark-store";
+import { getFavorites } from "../../api/favorites/get-favorites";
 import Pagination from "../../components/movies/pagination";
 import { useQuery } from "@tanstack/react-query";
 import { getMyInfo } from "../../api/members/get-my-info";
 
 export default function MyPage()  {
     
-    const bookmarkIds = useBookmarkStore((state) => state.bookmarkedMovieIds);
+    const favoritesQuery = useQuery({ queryKey: ["favorites"], queryFn: getFavorites,});
+    const bookmarkIds = favoritesQuery.data?.map((favorite) => favorite.movieId) ?? [];
     const [page, setPage] = useState(1);
     const MOVIES_PER_PAGE = 3;
     const navigate = useNavigate();
@@ -25,8 +26,8 @@ export default function MyPage()  {
     });
 
     // 로딩 및 에러 상태
-    const isLoading = movieQueries.some((query) => query.isPending);
-    const hasError = movieQueries.some((query) => query.isError);
+    const isLoading = favoritesQuery.isPending || movieQueries.some((query) => query.isPending);
+    const hasError = favoritesQuery.isError || movieQueries.some((query) => query.isError);
     movieQueries.forEach((query, index) => {
         if (query.isError) {
             console.error("영화 정보 조회 실패", {
