@@ -2,7 +2,7 @@ import { useState } from "react";
 import { checkEmailDuplicate } from "../../api/members/check-email-duplicate";
 import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
 import "./signup-page.css";
-import { signup } from "../../api/members/signup";
+import { useSignupMutation } from "../../hooks/use-signup-mutation";
 // import { useNavigate } from "@tanstack/react-router";
 
 const DEFAULT_DUPLICATE_CHECK = {
@@ -32,7 +32,7 @@ export function SignupPage() {
         email: DEFAULT_DUPLICATE_CHECK,
         nickname: DEFAULT_DUPLICATE_CHECK,
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const signUpMutation = useSignupMutation();
     // const navigate = useNavigate();
 
     // 입력값의 유효성 검사
@@ -113,24 +113,30 @@ console.log({
         e.preventDefault()
 
         // 회원가입 API 요청 추가
-        if(!canSubmit || isSubmitting) return;
+        if(!canSubmit || signUpMutation.isPending) return;
 
-        setIsSubmitting(true);
-        try{
-            const response = await signup({
-                email: form.email.trim(),
-                nickname: form.nickname.trim(),
-                password: form.password,
-            });
-            alert(response.message);
-            // 로그인 페이지 연결 후 주석 해제
-            // navigate({ to: "/login"});
-        } catch {
-            alert("회원가입에 실패했어요. 다시 시도해 주세요.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        signUpMutation.mutate({
+            email:form.email.trim(),
+            nickname: form.nickname.trim(),
+            password: form.password
+        })
+
+    //     setIsSubmitting(true);
+    //     try{
+    //         const response = await signup({
+    //             email: form.email.trim(),
+    //             nickname: form.nickname.trim(),
+    //             password: form.password,
+    //         });
+    //         alert(response.message);
+    //         // 로그인 페이지 연결 후 주석 해제
+    //         // navigate({ to: "/login"});
+    //     } catch {
+    //         alert("회원가입에 실패했어요. 다시 시도해 주세요.");
+    //     } finally {
+    //         setIsSubmitting(false);
+    //     }
+    // };
 
     return (
         <div className="signup-page">
@@ -185,7 +191,7 @@ console.log({
                         )}
                     </div>
                     <button type="submit" className="submit-button" disabled={!canSubmit || isSubmitting}>
-                           {isSubmitting ? "가입 중" : "가입하기"}
+                           {signUpMutation.isPending ? "가입 중" : "가입하기"}
                      </button>
 
                      <p className="login-text">이미 계정이 있나요? <a href="/login">로그인</a></p>
