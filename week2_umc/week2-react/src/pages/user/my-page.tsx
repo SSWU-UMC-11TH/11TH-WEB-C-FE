@@ -1,32 +1,37 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueries } from "@tanstack/react-query"; 
 import { FiUser } from "react-icons/fi";
+import { getMe } from "../../api/members/me";
+import { getFavorites } from "../../api/favorites/get-favorites"; 
+import { getMovieDetail } from "../../api/movies/get-movie-detail"; 
+import { useAuthStore } from "../../stores/auth-store";
 
-const MOCK_FAVORITES = [
-  {
-    id: 1,
-    title: "스파이더맨: 브랜드 뉴 데이",
-    date: "2026.07.29",
-    poster:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZvMj_YYELXN4av8Fnv2r2AeCwqHVFUKsmHZsnQqmUBg&s=10   ",
-  },
-  {
-    id: 2,
-    title: "오디세이",
-    date: "2026.08.05",
-    poster:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8uhUGZwdiQvyu9pwWrJQOIyf7ljRx-pV9ZqLgyvOHBQ&s=10",
-  },
-  {
-    id: 3,
-    title: "미니언즈 & 몬스터즈",
-    date: "2026.07.15",
-    poster:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2guJHmZOswUhH0qH2UryduMnRYzTOJniWLEKJnHAOIg&s=10",
-  },
-];
-
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"; 
 export function MyPage() {
   const navigate = useNavigate();
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    enabled: Boolean(accessToken),
+    retry: false,
+  });
+
+  const favoritesQuery = useQuery({
+    queryKey: ["favorites"],
+    queryFn: getFavorites,
+    enabled: Boolean(accessToken),
+  });
+
+  const favorites = favoritesQuery.data ?? [];
+
+  const movieQueries = useQueries({
+    queries: favorites.map((fav) => ({
+      queryKey: ["movies", "detail", fav.movieId],
+      queryFn: () => getMovieDetail(fav.movieId),
+    })),
+  });
 
   const handleGoToEdit = () => {
     navigate({ to: "/my/edit" });
@@ -58,12 +63,14 @@ export function MyPage() {
             <div className="flex gap-16 text-xs">
               <div>
                 <span className="block text-gray-400 mb-1">닉네임</span>
-                <span className="font-bold text-gray-900 text-sm">loki_11th</span>
+                <span className="font-bold text-gray-900 text-sm">
+                  {meQuery.isLoading ? "불러오는 중..." : (meQuery.data?.nickname ?? "-")}
+                </span>
               </div>
               <div>
                 <span className="block text-gray-400 mb-1">이메일</span>
                 <span className="font-bold text-gray-900 text-sm">
-                  seoyoung@cinemalab.kr
+                  {meQuery.isLoading ? "불러오는 중..." : (meQuery.data?.email ?? "-")}
                 </span>
               </div>
             </div>
@@ -74,26 +81,56 @@ export function MyPage() {
         <section className="pt-8 space-y-4">
           <h2 className="text-xs font-semibold text-gray-700">내 즐겨찾기</h2>
 
-          {/* 카드 배치 */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-            {MOCK_FAVORITES.map((movie) => (
-              <div key={movie.id} className="flex flex-col items-start w-full group cursor-pointer">
-                <div className="relative w-full aspect-[1/1.05] rounded-[12px] overflow-hidden bg-[#e5e7eb] shadow-sm">
-                  <img
-                    src={movie.poster}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                </div>
-                <div className="mt-2 space-y-0.5">
-                  <h3 className="font-semibold text-xs text-gray-900 truncate">
-                    {movie.title}
-                  </h3>
-                  <p className="text-[11px] text-gray-400">{movie.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* 즐겨찾기 영화 카드 렌더링 */}
+          {favoritesQuery.isLoading ? (
+            <p className="text-xs text-gray-400 py-8 text-center">
+              즐겨찾기 목록을 불러오는 중...
+            </p>
+          ) : favorites.length === 0 ? (
+            <p className="text-xs text-gray-400 py-8 text-center">
+              즐겨찾기한 영화가 없습니다.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+              {favorites.map((fav, index) => {
+                const movie = movieQueries[index]?.data;
+                const posterUrl = movie?.poster_path
+                  ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}`
+                  : "";
+
+                return (
+                  <div
+                    key={fav.favoriteId}
+                    onClick={() =>
+                      navigate({
+                        to: "/movies/$movieId",
+                        params: { movieId: String(fav.movieId) },
+                      })
+                    }
+                    className="flex flex-col items-start w-full group cursor-pointer"
+                  >
+                    <div className="relative w-full aspect-[1/1.05] rounded-[12px] overflow-hidden bg-[#e5e7eb] shadow-sm">
+                      {posterUrl && (
+                        <img
+                          src={posterUrl}
+                          alt={movie?.title ?? "영화 포스터"}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      )}
+                    </div>
+                    <div className="mt-2 space-y-0.5 w-full">
+                      <h3 className="font-semibold text-xs text-gray-900 truncate">
+                        {movie?.title ?? `영화 #${fav.movieId}`}
+                      </h3>
+                      <p className="text-[11px] text-gray-400">
+                        {movie?.release_date?.replaceAll("-", ".") ?? ""}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* 페이지네이션 (< 1 >) */}
           <div className="flex justify-center items-center gap-2 pt-8">

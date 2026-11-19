@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { FiMail, FiLock } from "react-icons/fi";
-// import { useNavigate } from "@tanstack/react-router"; // TODO: 로그인 성공 후 이동 처리 시 주석 해제
 import{Link} from "@tanstack/react-router";
+import { useLoginMutation } from "../../hooks/use-login-mutation";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/;
 
 const DEFAULT_FORM = {
   email: "",
@@ -13,36 +11,28 @@ const DEFAULT_FORM = {
 };
 
 export function LoginPage() {
-  // const navigate = useNavigate(); // TODO: 라우팅 이동용
-  // TODO: 로그인 API 연결 시 중복 요청 방지 및 로딩용
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState(DEFAULT_FORM);
+const loginMutation = useLoginMutation();
+const [form, setForm] = useState(DEFAULT_FORM);
 
   const isEmailValid = EMAIL_REGEX.test(form.email.trim());
-  const isPasswordValid = PASSWORD_REGEX.test(form.password);
+  const isPasswordValid = form.password.length > 0;
 
   const showEmailError = form.email.length > 0 && !isEmailValid;
-  const showPasswordError = form.password.length > 0 && !isPasswordValid;
 
-  const canSubmit = isEmailValid && isPasswordValid && !isSubmitting;
+  const canSubmit = isEmailValid && isPasswordValid && !loginMutation.isPending;
 
   const handleChangeField = (key: keyof typeof DEFAULT_FORM, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!canSubmit) return;
 
-    try {
-      setIsSubmitting(true);
-      // TODO: 로그인 API 연동 수행
-      console.log("로그인 시도:", form);
-    } catch {
-      alert("로그인에 실패했습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    loginMutation.mutate({
+      email: form.email.trim(),
+      password: form.password,
+    });
   };
 
   return (
@@ -92,18 +82,9 @@ export function LoginPage() {
                 placeholder="비밀번호"
                 value={form.password}
                 onChange={(e) => handleChangeField("password", e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg outline-none transition-colors text-sm ${
-                  showPasswordError
-                    ? "border-red-500 focus:border-red-500"
-                    : "border-gray-200 focus:border-blue-500"
-                }`}
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg outline-none transition-colors text-sm focus:border-blue-500"
               />
             </div>
-            {showPasswordError && (
-              <p className="text-xs text-red-500">
-                8자 이상, 영문 대소문자/숫자/특수문자를 모두 포함해 주세요.
-              </p>
-            )}
           </div>
 
           {/* 제출 버튼 */}
@@ -116,7 +97,7 @@ export function LoginPage() {
                 : "bg-[#2563eb] cursor-not-allowed"
             }`}
           >
-            {isSubmitting ? "로그인 중..." : "로그인"}
+            {loginMutation.isPending ? "로그인 중..." : "로그인"}
           </button>
         </form>
 

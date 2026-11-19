@@ -1,9 +1,21 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState} from "@tanstack/react-router";
 import { cn } from "../../utils/cn";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../api/members/me";
+import { useAuthStore } from "../../stores/auth-store";
 
 export function Header() {
-    const pathname = useRouterState({
-    select: (state) => state.location.pathname,
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const meQuery = useQuery({
+  queryKey: ["members", "me"],
+  queryFn: getMe,
+  enabled: Boolean(accessToken),
+  staleTime: 5 * 60 * 1000,
+  retry: false,
+  });
+  
+  const pathname = useRouterState({
+  select: (state) => state.location.pathname,
   });
 
   return (
@@ -70,12 +82,23 @@ export function Header() {
             </svg>
           </Link>
           
-          <Link
-            to="/login"
-            className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
-          >
-            로그인
-          </Link>
+          {!accessToken ? (
+            <Link
+              to="/login"
+              className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors no-underline"
+            >
+              로그인
+            </Link>
+          ) : meQuery.isLoading ? (
+            <span className="h-[34px] w-[72px] animate-pulse rounded-[8px] bg-gray-200" />
+          ) : (
+            <Link
+              to="/my"
+              className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors no-underline"
+            >
+              마이페이지
+            </Link>
+          )}
         </div>
       </div>
     </header>

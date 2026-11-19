@@ -1,95 +1,174 @@
-import { Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { BookmarkButton } from "../../components/bookmark-button";
 import { getTmdbPosterUrl, getTmdbBackdropUrl } from "../../utils/movies/tmdb-image";
 import { getMovieDetail } from "../../api/movies/get-movie-detail";
 import { getMovieDetailErrorMessage } from "../../utils/movies/get-movie-detail-error-message";
+import { useAuthStore } from "../../stores/auth-store";
+import { getMemberIdFromToken } from "../../utils/auth/get-member-id-from-token";
+import { getMemberRatings } from "../../api/ratings/get-member-ratings";
+import { createRating } from "../../api/ratings/create-rating";
+import { updateRating } from "../../api/ratings/update-rating";
+import { deleteRating } from "../../api/ratings/delete-rating";
 
 export function MovieDetailPage() {
   const { movieId } = useParams({ from: "/movies/$movieId" });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const memberId = getMemberIdFromToken(accessToken);
 
   const parsedMovieId = Number(movieId);
+  const isValidMovieId = Number.isInteger(parsedMovieId) && parsedMovieId > 0;
 
-  // 유효한 ID 검증 (정수 및 0보다 큰 수)
-  const isValidMovieId =
-    Number.isInteger(parsedMovieId) && parsedMovieId > 0;
-
-  // 영화 상세 데이터 요청
+  // 1. 영화 상세 데이터 요청
   const movieDetailQuery = useQuery({
     queryKey: ["movies", "detail", parsedMovieId],
     queryFn: () => getMovieDetail(parsedMovieId),
     enabled: isValidMovieId,
   });
 
-  // 평점 및 후기 관련 상태
+  // 2. 내 평점 목록 조회 후 현재 영화의 내 평점 찾기
+  const memberRatingsQuery = useQuery({
+    queryKey: ["ratings", "member", memberId],
+    queryFn: () => getMemberRatings(memberId!),
+    enabled: Boolean(memberId) && isValidMovieId,
+  });
+
+  const existingRating = memberRatingsQuery.data?.find(
+    (item) => item.movieId === parsedMovieId
+  );
+
+  // 평점 및 후기 입력 상태
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [review, setReview] = useState<string>("");
 
+  // 서버에서 기존 평점을 불러오면 입력 폼에 초기값 반영
+  useEffect(() => {
+    if (existingRating) {
+      setRating(existingRating.score);
+      setReview(existingRating.comment ?? "");
+    } else {
+      setRating(0);
+      setReview("");
+    }
+  }, [existingRating]);
+
+  // 3. 평점 등록 / 수정 뮤테이션
+  const saveRatingMutation = useMutation({
+    mutationFn: async () => {
+      if (existingRating) {
+        return updateRating(existingRating.ratingId, {
+          score: rating,
+          comment: review,
+        });
+      }
+      return createRating({
+        movieId: parsedMovieId,
+        score: rating,
+        comment: review,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ratings", "member", memberId] });
+      alert(existingRating ? "평점이 수정되었습니다." : "평점이 등록되었습니다.");
+    },
+    onError: () => {
+      alert("평점 저장에 실패했습니다. 다시 시도해 주세요.");
+    },
+  });
+
+  // 4. 평점 삭제 뮤테이션
+  const deleteRatingMutation = useMutation({
+    mutationFn: () => deleteRating(existingRating!.ratingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ratings", "member", memberId] });
+      setRating(0);
+      setReview("");
+      alert("평점이 삭제되었습니다.");
+    },
+    onError: () => {
+      alert("평점 삭제에 실패했습니다. 다시 시도해 주세요.");
+    },
+  });
+
   const handleSaveReview = () => {
+    if (!memberId) {
+      if (confirm("로그인이 필요한 기능입니다. 로그인 페이지로 이동할까요?")) {
+        navigate({ to: "/login" });
+      }
+      return;
+    }
     if (rating === 0) {
       alert("별점을 선택해 주세요!");
       return;
     }
-    alert(`평점이 저장되었습니다.\n별점: ${rating}점\n후기: ${review}`);
+    saveRatingMutation.mutate();
   };
 
-// 잘못된 영화 번호 처리
-if (!isValidMovieId) {
-  return (
-    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
-      <main className="text-center py-[60px]">
-        <h2 className="text-[18px] font-[700] text-[#111]">
-          올바르지 않은 영화 번호예요.
-        </h2>
-        <Link
-          to="/"
-          className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
-        >
-          영화 목록으로 돌아가기
-        </Link>
-      </main>
-    </div>
-  );
-}
+  const handleDeleteReview = () => {
+    if (!existingRating) return;
+    if (confirm("작성한 평점을 삭제할까요?")) {
+      deleteRatingMutation.mutate();
+    }
+  };
 
-// 로딩 상태 UI
-if (movieDetailQuery.isPending) {
-  return (
-    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
-      <div className="text-center py-[60px] text-[#6b7280]">
-        영화를 불러오는 중입니다...
+  // 잘못된 영화 번호 처리
+  if (!isValidMovieId) {
+    return (
+      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+        <main className="text-center py-[60px]">
+          <h2 className="text-[18px] font-[700] text-[#111]">
+            올바르지 않은 영화 번호예요.
+          </h2>
+          <Link
+            to="/"
+            className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
+          >
+            영화 목록으로 돌아가기
+          </Link>
+        </main>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-// 에러 상태 또는 데이터가 없는 경우 UI
-if (movieDetailQuery.isError || !movieDetailQuery.data) {
-  return (
-    <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
-      <main className="text-center py-[60px]">
-        <h2 className="text-[18px] font-[700] text-[#111]">
-          {movieDetailQuery.isError
-            ? getMovieDetailErrorMessage(movieDetailQuery.error)
-            : "영화를 찾을 수 없어요."}
-        </h2>
-        <Link
-          to="/"
-          className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
-        >
-          영화 목록으로 돌아가기
-        </Link>
-      </main>
-    </div>
-  );
-}
+  // 로딩 상태 UI
+  if (movieDetailQuery.isPending) {
+    return (
+      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+        <div className="text-center py-[60px] text-[#6b7280]">
+          영화를 불러오는 중입니다...
+        </div>
+      </div>
+    );
+  }
 
-// 영화 상세 데이터
-const movie = movieDetailQuery.data;
+  // 에러 상태 또는 데이터가 없는 경우 UI
+  if (movieDetailQuery.isError || !movieDetailQuery.data) {
+    return (
+      <div className="w-full min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+        <main className="text-center py-[60px]">
+          <h2 className="text-[18px] font-[700] text-[#111]">
+            {movieDetailQuery.isError
+              ? getMovieDetailErrorMessage(movieDetailQuery.error)
+              : "영화를 찾을 수 없어요."}
+          </h2>
+          <Link
+            to="/"
+            className="text-[13px] text-[#2563eb] underline mt-[12px] inline-block"
+          >
+            영화 목록으로 돌아가기
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
-// runtime 시간 분 변환 및 null 처리
+  const movie = movieDetailQuery.data;
+
   const formattedRuntime = movie.runtime
     ? (() => {
         const hours = Math.floor(movie.runtime / 60);
@@ -100,6 +179,8 @@ const movie = movieDetailQuery.data;
 
   const posterUrl = getTmdbPosterUrl(movie.poster_path);
   const backdropUrl = getTmdbBackdropUrl(movie.backdrop_path);
+  const isSubmitting =
+    saveRatingMutation.isPending || deleteRatingMutation.isPending;
 
   return (
     <div className="w-full min-h-screen bg-[#f4f5f7] font-sans text-[#111] flex flex-col justify-between">
@@ -133,8 +214,8 @@ const movie = movieDetailQuery.data;
               </p>
               <p className="text-[12px] text-[#9ca3af]">
                 {movie.release_date}{" "}
-                {movie.genres.map((g) => g.name).join(" · ")}{" "}
-                · {formattedRuntime}
+                {movie.genres.map((g) => g.name).join(" · ")} ·{" "}
+                {formattedRuntime}
               </p>
             </div>
           </div>
@@ -217,14 +298,28 @@ const movie = movieDetailQuery.data;
                 className="w-full h-[100px] p-[12px] text-[12px] bg-white border border-[#e5e7eb] rounded-[10px] resize-none focus:outline-none focus:border-[#2563eb] placeholder:text-[#9ca3af] box-border mb-[12px]"
               />
 
-              {/* 저장 버튼 */}
-              <button
-                type="button"
-                onClick={handleSaveReview}
-                className="w-full py-[12px] bg-[#1e293b] hover:bg-[#0f172a] text-white text-[13px] font-[600] rounded-[10px] transition-colors active:scale-95 cursor-pointer"
-              >
-                평점 저장
-              </button>
+              {/* 저장 / 수정 / 삭제 버튼 */}
+              <div className="flex items-center gap-[8px]">
+                <button
+                  type="button"
+                  onClick={handleSaveReview}
+                  disabled={isSubmitting}
+                  className="flex-1 py-[12px] bg-[#1e293b] hover:bg-[#0f172a] text-white text-[13px] font-[600] rounded-[10px] transition-colors active:scale-95 cursor-pointer disabled:opacity-60"
+                >
+                  {existingRating ? "평점 수정" : "평점 저장"}
+                </button>
+
+                {existingRating && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteReview}
+                    disabled={isSubmitting}
+                    className="px-[16px] py-[12px] bg-white hover:bg-[#fef2f2] text-[#dc2626] border border-[#fecaca] text-[13px] font-[600] rounded-[10px] transition-colors active:scale-95 cursor-pointer disabled:opacity-60"
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </main>

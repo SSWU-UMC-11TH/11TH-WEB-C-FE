@@ -1,20 +1,95 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiUser, FiEdit2 } from "react-icons/fi";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../api/members/me";
+import { checkNicknameDuplicate } from "../../api/members/check-nickname-duplicate";
+import { useAuthStore } from "../../stores/auth-store";
+import { useUpdateMeMutation } from "../../hooks/use-update-me-mutation";
 
 export function MyEditPage() {
-  const [nickname, setNickname] = useState("loki_11th");
-  const email = "seoyoung@cinemalab.kr";
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const meQuery = useQuery({
+    queryKey: ["members", "me"],
+    queryFn: getMe,
+    enabled: Boolean(accessToken),
+    retry: false,
+  });
 
+  const [nickname, setNickname] = useState("");
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [nicknameMessage, setNicknameMessage] = useState("");
+
+  const email = meQuery.data?.email ?? "";
+  const originalNickname = meQuery.data?.nickname ?? "";
+  const updateMeMutation = useUpdateMeMutation();
+
+  // 내 정보 로드 시 닉네임 초기값 세팅
+  useEffect(() => {
+    if (meQuery.data?.nickname) {
+      setNickname(meQuery.data.nickname);
+    }
+  }, [meQuery.data?.nickname]);
+
+  const trimmedNickname = nickname.trim();
   const isNicknameValid =
-    nickname.trim().length >= 2 && nickname.trim().length <= 12;
+    trimmedNickname.length >= 2 && trimmedNickname.length <= 12;
+  const isNicknameChanged = trimmedNickname !== originalNickname;
 
-  const handleCheckDuplicate = () => {
-    if (!isNicknameValid) return;
-    alert("사용할 수 있는 닉네임입니다.");
+  // 입력값 변경 시 중복 확인 상태 초기화
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
+    setIsNicknameChecked(false);
+    setNicknameMessage("");
   };
 
+  // 실제 중복 확인 API 호출
+  const handleCheckDuplicate = async () => {
+    if (!isNicknameValid || isCheckingDuplicate) return;
+
+    if (!isNicknameChanged) {
+      setNicknameMessage("현재 사용 중인 본인의 닉네임입니다.");
+      setIsNicknameChecked(false);
+      return;
+    }
+
+    setIsCheckingDuplicate(true);
+    try {
+      const response = await checkNicknameDuplicate(trimmedNickname);
+      if (response.available) {
+        setIsNicknameChecked(true);
+        setNicknameMessage("사용할 수 있는 닉네임입니다.");
+      } else {
+        setIsNicknameChecked(false);
+        setNicknameMessage("이미 사용 중인 닉네임입니다.");
+      }
+    } catch {
+      setIsNicknameChecked(false);
+      setNicknameMessage("중복 확인에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsCheckingDuplicate(false);
+    }
+  };
+
+  // 변경사항 저장 (유효성 통과 + 기존과 다른 닉네임 + 중복 확인 완료 시에만 가능)
+  const canSave =
+    isNicknameValid &&
+    isNicknameChanged &&
+    isNicknameChecked &&
+    !updateMeMutation.isPending;
+
   const handleSave = () => {
-    alert("변경사항이 저장되었습니다.");
+    if (!canSave) return;
+
+    updateMeMutation.mutate(
+      { nickname: trimmedNickname },
+      {
+        onSuccess: () => {
+          setIsNicknameChecked(false);
+          setNicknameMessage("");
+        },
+      }
+    );
   };
 
   const handleWithdraw = () => {
@@ -28,7 +103,7 @@ export function MyEditPage() {
       {/* 메인 콘텐츠 영역 */}
       <div className="max-w-[1080px] w-full mx-auto px-[20px] pt-10 pb-16 flex-1 flex flex-col justify-between">
         <div>
-          {/* 상단 헤더: 제목/설명(좌측) & 변경사항 저장 버튼(우측) */}
+          {/* 상단 헤더 */}
           <div className="flex justify-between items-start mb-10">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">내 정보 수정</h1>
@@ -38,10 +113,11 @@ export function MyEditPage() {
             </div>
             <button
               onClick={handleSave}
-              className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
+              disabled={!canSave}
+              className="bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-blue-300 disabled:cursor-not-allowed text-white border-none rounded-[8px] px-[16px] py-[8px] text-[13px] font-[600] cursor-pointer transition-colors"
               type="button"
             >
-              변경사항 저장
+              {updateMeMutation.isPending ? "저장 중..." : "변경사항 저장"}
             </button>
           </div>
 
@@ -77,18 +153,27 @@ export function MyEditPage() {
                   <input
                     type="text"
                     value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
+                    onChange={(e) => handleNicknameChange(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg pr-20 text-sm outline-none focus:border-[#2563eb]"
                   />
                   <button
                     type="button"
                     onClick={handleCheckDuplicate}
-                    disabled={!isNicknameValid}
+                    disabled={!isNicknameValid || isCheckingDuplicate}
                     className="absolute right-3 text-xs font-semibold text-[#2563eb] hover:underline disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
                   >
-                    중복 확인
+                    {isCheckingDuplicate ? "확인 중..." : "중복 확인"}
                   </button>
                 </div>
+                {nicknameMessage && (
+                  <p
+                    className={`text-xs ${
+                      isNicknameChecked ? "text-blue-600" : "text-red-500"
+                    }`}
+                  >
+                    {nicknameMessage}
+                  </p>
+                )}
               </div>
 
               {/* 이메일 */}
