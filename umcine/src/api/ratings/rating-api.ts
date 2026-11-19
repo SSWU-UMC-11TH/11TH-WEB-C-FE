@@ -59,3 +59,15 @@ export async function createRating(request: CreateRatingRequest) : Promise<Ratin
     }).json<ApiResponse<RatingResponse>>();
     return response.result;
 }
+
+// 3. 평점 수정
+export async function updateRating(ratingId: number, request: UpdateRatingRequest) : Promise<RatingResponse> {
+    const response = await ky.patch(`${BASE_URL}/ratings/${ratingId}`,
+        {
+            headers: getAuthHeaders(),
+            json: request,
+        }
+    ).json<ApiResponse<RatingResponse>>();
+
+    return response.result;
+}

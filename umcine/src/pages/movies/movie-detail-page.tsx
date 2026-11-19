@@ -9,7 +9,7 @@ import Footer from "../../components/layout/footer.tsx";
 import { getFavoriteStatus } from "../../api/favorites/get-favorite-status.ts";
 import { useAuthStore } from "../../stores/auth-store.ts";
 import { getMyInfo } from "../../api/members/get-my-info.ts";
-import { getMemberRatings, createRating } from "../../api/ratings/rating-api.ts";
+import { getMemberRatings, createRating, updateRating } from "../../api/ratings/rating-api.ts";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
@@ -85,9 +85,9 @@ export function MovieDetailPage() {
                 comment: comment.trim(),
             };
 
-            //  if(myRating) {
-            //      return updateRating(myRating.ratingId, request);
-            //  }
+             if(myRating) {
+                 return updateRating(myRating.ratingId, request);
+             }
 
             return createRating({movieId, ...request,});
         },
