@@ -1,9 +1,9 @@
-import { useBookmarkStore  } from "../stores/bookmark-store";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "../stores/auth-store";
 import { getFavoriteStatus } from "../api/favorites/get-favorite-status";
 import { createFavorite } from "../api/favorites/create-favorite";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteFavorite } from "../api/favorites/delete-favorite";
 
 interface BookmarkButtonProps {
     movieId: number;
@@ -37,7 +37,20 @@ export function BookmarkButton({ movieId, variant="card"}: BookmarkButtonProps) 
         onError: () => { alert("북마크 추가에 실패했어요.");},
     });
 
-    const isPending = createMutation.isPending;
+    // 즐겨찾기 삭제
+    const deleteMutation = useMutation({
+        mutationFn: () => deleteFavorite(movieId),
+        onSuccess: () => {
+            return queryClient.invalidateQueries({
+                queryKey: ["favorites"],
+            });
+        },
+        onError: () => {
+            alert("북마크 해제에 실패했어요.");
+        },
+    });
+
+    const isPending = createMutation.isPending || deleteMutation.isPending;
 
     // 버튼 클릭
     const handleClick = (
@@ -60,17 +73,11 @@ export function BookmarkButton({ movieId, variant="card"}: BookmarkButtonProps) 
             }
 
             if(isBookmarked) {
-                
+                deleteMutation.mutate();
             } else {
                 createMutation.mutate();
             }
         };
-
-        const buttonText = !accessToken ? "로그인 후 북마크" : favoriteStatusQuery.isPending
-                                        ? "확인 중..." : favoriteStatusQuery.isError
-                                        ? "다시 조회" : isPending 
-                                        ? "처리 중..." : isBookmarked
-                                        ? "북마크 해제" : "북마크 추가";
 
     return (
         <button type="button" onClick={handleClick} disabled={isPending || (!!accessToken && favoriteStatusQuery.isPending)} className={
