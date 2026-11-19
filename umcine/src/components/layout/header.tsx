@@ -27,7 +27,7 @@ export function Header() {
                     <Link to="/search" search={{}}>
                         검색
                     </Link>
-                    <span>내 정보</span>
+                    <Link to="/mypage">내 정보</Link>
                 </nav>
             </div>
 
@@ -47,7 +47,7 @@ export function Header() {
                     <span className="h-10 w-24 animate-pulse rounded-lg bg-gray-200" />
                 ) : (
                     <Link to="/my">마이페이지</Link>
-                )};
+                )}
             </div>
         </header>
     );

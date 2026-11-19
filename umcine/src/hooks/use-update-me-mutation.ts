@@ -4,6 +4,7 @@ import type { MemberInfo } from "../api/members/me";
 
 export function useUpdateMeMutation() {
     const queryClient = useQueryClient();
+    
 
     return useMutation({
         mutationFn: updateMe,
