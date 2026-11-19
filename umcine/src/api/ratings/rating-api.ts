@@ -52,3 +52,10 @@ export async function getMemberRatings(memberId: number) : Promise<RatingRespons
 }
 
 // 2. 평점 등록 
+export async function createRating(request: CreateRatingRequest) : Promise<RatingResponse> {
+    const response = await ky.post(`${BASE_URL}/ratings`, {
+        headers: getAuthHeaders(),
+        json: request,
+    }).json<ApiResponse<RatingResponse>>();
+    return response.result;
+}

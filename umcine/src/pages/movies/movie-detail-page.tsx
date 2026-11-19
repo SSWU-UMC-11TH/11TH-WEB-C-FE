@@ -9,7 +9,7 @@ import Footer from "../../components/layout/footer.tsx";
 import { getFavoriteStatus } from "../../api/favorites/get-favorite-status.ts";
 import { useAuthStore } from "../../stores/auth-store.ts";
 import { getMyInfo } from "../../api/members/get-my-info.ts";
-import { getMemberRatings } from "../../api/ratings/rating-api.ts";
+import { getMemberRatings, createRating } from "../../api/ratings/rating-api.ts";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
@@ -77,37 +77,37 @@ export function MovieDetailPage() {
         myRating?.comment,
     ]);
 
-    // 평점 등록 또는 수정
-    // const saveRatingMutation = useMutation({
-    //     mutationFn: () => {
-    //         const request = {
-    //             score, 
-    //             comment: comment.trim(),
-    //         };
+    //평점 등록 또는 수정
+    const saveRatingMutation = useMutation({
+        mutationFn: () => {
+            const request = {
+                score, 
+                comment: comment.trim(),
+            };
 
-    //          if(myRating) {
-    //              return updateRating(myRating.ratingId, request);
-    //          }
+            //  if(myRating) {
+            //      return updateRating(myRating.ratingId, request);
+            //  }
 
-    //         return CreateRating({movieId, ...request,});
-    //     },
+            return createRating({movieId, ...request,});
+        },
 
-    //     onSuccess: async () => {
-    //         await QueryClient.invalidateQueries({
-    //             queryKey: ["ratings", "member", memberId],
-    //         });
+        onSuccess: async () => {
+            await QueryClient.invalidateQueries({
+                queryKey: ["ratings", "member", memberId],
+            });
 
-    //         alert("평점이 저장됐어요.");
-    //     },
-    //     onError: (error) => {
-    //         console.error("평점 저장 실패:", error);
-    //         alert("평점 저장에 실패했어요.");
-    //     },
-    // });
+            alert("평점이 저장됐어요.");
+        },
+        onError: (error) => {
+            console.error("평점 저장 실패:", error);
+            alert("평점 저장에 실패했어요.");
+        },
+    });
 
-    // 저장 가능 여부
-    // const canSaveRating = !!accessToken && memberId != null && ratingsQuery.isSuccess && !saveRatingMutation.isPending &&
-    //                      Number.isInteger(score) && score >= 1 && score <= 5 && comment.length <= 500;
+    //저장 가능 여부
+    const canSaveRating = !!accessToken && memberId != null && ratingsQuery.isSuccess && !saveRatingMutation.isPending &&
+                         Number.isInteger(score) && score >= 1 && score <= 5 && comment.length <= 500;
 
 
     // 잘못된 영화 id 처리
@@ -291,7 +291,7 @@ export function MovieDetailPage() {
                     />
 
                     {/* 저장 버튼 */}
-                    {/* <button
+                     <button
                         type="button"
                         onClick={() => saveRatingMutation.mutate()}
                         disabled={!canSaveRating}
@@ -302,7 +302,7 @@ export function MovieDetailPage() {
                             : myRating
                                 ? "평점 수정"
                                 : "평점 등록"}
-                    </button> */}
+                    </button>
                     <Footer/>
                 </aside>
             </section>
