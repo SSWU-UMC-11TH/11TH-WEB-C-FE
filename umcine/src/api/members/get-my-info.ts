@@ -2,6 +2,7 @@ import ky from "ky";
 import { useAuthStore } from "../../stores/auth-store";
 
 export interface MemberInfo {
+    memberId: number;
     email: string;
     nickname: string;
     createdAt: string;
