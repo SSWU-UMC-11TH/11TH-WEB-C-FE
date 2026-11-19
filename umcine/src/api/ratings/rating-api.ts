@@ -71,3 +71,10 @@ export async function updateRating(ratingId: number, request: UpdateRatingReques
 
     return response.result;
 }
+
+// 4. 평점 삭제
+export async function deleteRating(ratingId: number) : Promise<void> {
+    await ky.delete(`${BASE_URL}/ratings/${ratingId}`, {
+        headers:getAuthHeaders(),
+    });
+}

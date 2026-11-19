@@ -9,7 +9,7 @@ import Footer from "../../components/layout/footer.tsx";
 import { getFavoriteStatus } from "../../api/favorites/get-favorite-status.ts";
 import { useAuthStore } from "../../stores/auth-store.ts";
 import { getMyInfo } from "../../api/members/get-my-info.ts";
-import { getMemberRatings, createRating, updateRating } from "../../api/ratings/rating-api.ts";
+import { getMemberRatings, createRating, updateRating, deleteRating } from "../../api/ratings/rating-api.ts";
 
 export function MovieDetailPage() {
     const { movieId: movieIdParam } = useParams({ from: "/movies/$movieId" });
@@ -108,7 +108,29 @@ export function MovieDetailPage() {
     //저장 가능 여부
     const canSaveRating = !!accessToken && memberId != null && ratingsQuery.isSuccess && !saveRatingMutation.isPending &&
                          Number.isInteger(score) && score >= 1 && score <= 5 && comment.length <= 500;
+    
+    // 평점 삭제
+    const deleteRatingMutation = useMutation({
+        mutationFn: () => {
+            if(!myRating) {
+                throw new Error("삭제할 평점이 없습니다.");
+            }
+            return deleteRating(myRating.ratingId);
+        },
+        onSuccess: async() => {
+            setScore(0);
+            setComment("");
 
+            await QueryClient.invalidateQueries({
+                queryKey: ["ratings", "member", memberId],
+            });
+            alert("평점이 삭제됐어요.");
+        },
+        onError: (error) => {
+            console.error("평점 삭제 실패:", error);
+            alert("평점 삭제에 실패했어요.");
+        },
+    });
 
     // 잘못된 영화 id 처리
     if (!isValidMovieId) {
@@ -303,6 +325,22 @@ export function MovieDetailPage() {
                                 ? "평점 수정"
                                 : "평점 등록"}
                     </button>
+
+                    {/* 평점 삭제 버튼 */}
+                    {myRating && (
+                        <button type="button" onClick={() => {
+                            if(window.confirm("평점을 삭제하시겠어요?")) {
+                                deleteRatingMutation.mutate();
+                            }
+                        }}
+                        disabled={deleteRatingMutation.isPending || saveRatingMutation.isPending}
+                        className="mt-2 w-full rounded-md border border-red-300 bg-white py-3 text-sm font-medium text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                     >
+                        {deleteRatingMutation.isPending
+                            ? "삭제 중..."
+                            : "평점 삭제"}
+                    </button>
+                    )}
                     <Footer/>
                 </aside>
             </section>
