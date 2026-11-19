@@ -1,6 +1,20 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../api/members/me";
+import { useAuthStore } from "../../stores/auth-store";
 
 export function Header() {
+
+    const accessToken = useAuthStore((state) => state.accessToken);
+
+    const meQuery = useQuery({
+        queryKey: ["members", "me"],
+        queryFn: getMe,
+        enabled: Boolean(accessToken),
+        staleTime: 5 * 60 * 1000,
+        retry: false,
+    });
+
     return (
         <header className="flex w-full items-center justify-between border-b border-gray-200 bg-white px-4 py-6 md:px-10 lg:px-20">
             <div className="flex items-center gap-8">
